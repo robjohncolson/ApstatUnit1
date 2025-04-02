@@ -1,0 +1,34 @@
+LPS+ColsonR@LPS-5CD32865BG MINGW64 ~/Downloads/ApstatUnit1 (main)
+$ ls -R
+.:
+Index-reference-spec.gemini.json  index.html         pdfs/
+claude-build-prompt.txt           knowledge-tree.md  rename_pdfs.py*
+gemini-index-spec-maker.txt       ls-output.txt
+grok-gather-material-prompt.txt   media-map.md
+
+./pdfs:
+UnitWeights.pdf  unit1/
+
+./pdfs/unit1:
+SG_ComparingDistributionsofaQuantitativeVariableQuiz_67ed2d7ac20979.67ed2d7bde4197.85847118.pdf
+SG_DescribingtheDistributionofaQuantitativeVariableQuiz_67ed2c904e1c96.67ed2c9127f3e4.62961223.pdf
+SG_GraphicalRepresentationsofSummaryStatisticsQuiz_67ed2d3c1e38c9.67ed2d3ce96076.26789402.pdf
+SG_RepresentingaCategoricalVariablewithGraphsQuiz_67ed2c06864248.67ed2c07bc6c55.08599768.pdf
+SG_RepresentingaCategoricalVariablewithTablesQuiz_67ed2b7ba74c00.67ed2b7c8ff1e2.95093309.pdf
+SG_RepresentingaQuantitativeVariablewithGraphsQuiz_67ed2c4a8004b3.67ed2c4b4a3f60.10148866.pdf
+SG_SummaryStatisticsforaQuantitativeVariableQuiz_67ed2cd7e2a033.67ed2cd93b7149.83841925.pdf
+SG_TheLanguageofVariationVariablesQuiz_67ed2b299a9fa1.67ed2b2a7c5f55.89333974.pdf
+SG_TheNormalDistributionQuiz_67ed2e1de32ed7.67ed2e1f437061.68372974.pdf
+SG_Unit1ProgressCheckFRQ_67ed2e76c9d419.67ed2e77d7b4c9.25964925.pdf
+SG_Unit1ProgressCheckMCQPartA_67ed2e51377607.67ed2e52bb2764.50886060.pdf
+SG_Unit1ProgressCheckMCQPartB_67ed2e61e02692.67ed2e639760f3.84751179.pdf
+TB_ComparingDistributionsofaQuantitativeVariableQuiz_67ed2d7f498450.67ed2d804e7ec1.73767811.pdf
+TB_DescribingtheDistributionofaQuantitativeVariableQuiz_67ed2c8bcac483.67ed2c8ca26f46.13124856.pdf
+TB_GraphicalRepresentationsofSummaryStatisticsQuiz_67ed2d37c9f7e4.67ed2d389d9286.33341792.pdf
+TB_RepresentingaCategoricalVariablewithGraphsQuiz_67ed2c00f1d3d2.67ed2c0216c242.84081819.pdf
+TB_RepresentingaCategoricalVariablewithTablesQuiz_67ed2b780efaa8.67ed2b78ce8882.13184567.pdf
+TB_RepresentingaQuantitativeVariablewithGraphsQuiz_67ed2c47865140.67ed2c4853a2e5.90850443.pdf
+TB_SummaryStatisticsforaQuantitativeVariableQuiz_67ed2cdc97f8d1.67ed2cddcb5a10.27904925.pdf
+TB_TheLanguageofVariationVariablesQuiz_67ed2b25067297.67ed2b25d01e83.98921216.pdf
+TB_TheNormalDistributionQuiz_67ed2e220b9a70.67ed2e2331b161.37969293.pdf
+TB_Unit1ProgressCheckFRQ_67ed2e733762a9.67ed2e74195952.12409363.pdf
