@@ -5,23 +5,23 @@ import re
 
 # Define the mapping of topics to their topic numbers
 topic_mapping = {
-    'ConstructingaConfidenceIntervalforaPopulationMean': '7.2',
-    'JustifyingaClaimAboutaPopulationMeanBasedonaConfidenceInterval': '7.3',
-    'SettingUpaTestforaPopulationMean': '7.4',
-    'CarryingOutaTestforaPopulationMean': '7.5',
-    'ConfidenceIntervalsfortheDifferenceofTwoMeans': '7.6',
-    'JustifyingaClaimAbouttheDifferenceofTwoMeansBasedonaConfidenceInterval': '7.7',
-    'SettingUpaTestfortheDifferenceofTwoPopulationMeans': '7.8',
-    'CarryingOutaTestfortheDifferenceofTwoPopulationMeans': '7.9',
-    'Unit7ProgressCheckFRQ': 'unit7_pc_frq',
-    'Unit7ProgressCheckMCQPartA': 'unit7_pc_mcq_parta',
-    'Unit7ProgressCheckMCQPartB': 'unit7_pc_mcq_partb',
-    'Unit7ProgressCheckMCQPartC': 'unit7_pc_mcq_partc',
+    'TheLanguageofVariationVariables': '1.2',
+    'RepresentingaCategoricalVariablewithTables': '1.3',
+    'RepresentingaCategoricalVariablewithGraphs': '1.4',
+    'RepresentingaQuantitativeVariablewithGraphs': '1.5',
+    'DescribingtheDistributionofaQuantitativeVariable': '1.6',
+    'SummaryStatisticsforaQuantitativeVariable': '1.7',
+    'GraphicalRepresentationsofSummaryStatistics': '1.8',
+    'ComparingDistributionsofaQuantitativeVariable': '1.9',
+    'TheNormalDistribution': '1.10',
+    'Unit1ProgressCheckFRQ': 'unit1_pc_frq',
+    'Unit1ProgressCheckMCQPartA': 'unit1_pc_mcq_parta',
+    'Unit1ProgressCheckMCQPartB': 'unit1_pc_mcq_partb',
 }
 
 def rename_pdfs():
-    # Path to the Unit 7 PDFs
-    pdf_dir = 'pdfs/unit7'
+    # Path to the Unit 1 PDFs
+    pdf_dir = 'pdfs/unit1'
     
     # Check if directory exists
     if not os.path.exists(pdf_dir):

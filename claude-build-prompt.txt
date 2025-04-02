@@ -1,4 +1,3 @@
-I need help adapting my AP Statistics educational web materials from Unit 6 to Unit 7. Here's what I need:
 
 1. ANALYZE MY CODEBASE:
    - First, examine index.html to understand the structure of the web application

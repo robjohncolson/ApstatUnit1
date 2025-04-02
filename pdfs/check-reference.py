@@ -1,0 +1,1 @@
+import re; file = open('index.html', 'r', encoding='utf-8'); content = file.read(); matches = re.findall(r'Unit 7', content); print(f'Found {len(matches)} references to Unit 7')

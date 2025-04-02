@@ -1,15 +1,18 @@
 LPS+ColsonR@LPS-5CD32865BG MINGW64 ~/Downloads/ApstatUnit1 (main)
 $ ls -R
 .:
-Index-reference-spec.gemini.json  index.html         pdfs/
-claude-build-prompt.txt           knowledge-tree.md  rename_pdfs.py*
-gemini-index-spec-maker.txt       ls-output.txt
-grok-gather-material-prompt.txt   media-map.md
+Index-reference-spec.gemini.json  gemini-index-spec-maker.txt      index.html         ls-output.txt  pdfs/
+claude-build-prompt.txt           grok-gather-material-prompt.txt  knowledge-tree.md  media-map.md   rename_pdfs.py*
 
 ./pdfs:
 UnitWeights.pdf  unit1/
 
 ./pdfs/unit1:
+1.10_answers.pdf  1.2_quiz.pdf     1.4_answers.pdf  1.5_quiz.pdf     1.7_answers.pdf  1.8_quiz.pdf     original_files/           unit1_pc_mcq_parta_answers.pdf
+1.10_quiz.pdf     1.3_answers.pdf  1.4_quiz.pdf     1.6_answers.pdf  1.7_quiz.pdf     1.9_answers.pdf  unit1_pc_frq_answers.pdf  unit1_pc_mcq_partb_answers.pdf
+1.2_answers.pdf   1.3_quiz.pdf     1.5_answers.pdf  1.6_quiz.pdf     1.8_answers.pdf  1.9_quiz.pdf     unit1_pc_frq_quiz.pdf
+
+./pdfs/unit1/original_files:
 SG_ComparingDistributionsofaQuantitativeVariableQuiz_67ed2d7ac20979.67ed2d7bde4197.85847118.pdf
 SG_DescribingtheDistributionofaQuantitativeVariableQuiz_67ed2c904e1c96.67ed2c9127f3e4.62961223.pdf
 SG_GraphicalRepresentationsofSummaryStatisticsQuiz_67ed2d3c1e38c9.67ed2d3ce96076.26789402.pdf
