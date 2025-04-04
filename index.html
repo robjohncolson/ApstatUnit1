@@ -1091,45 +1091,112 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             });
         }
         
-        // Function to mark a topic as completed
+        // Function to mark a specific video as completed or not completed
+        function markVideoComplete(topicId, videoUrl, isCompleted) {
+            // Find the topic
+            const topic = pdfFiles.find(t => t.id === topicId);
+            if (!topic) return;
+            
+            // Find the video object
+            const video = topic.videos.find(v => v.url === videoUrl || v.altUrl === videoUrl);
+            if (!video) return;
+            
+            // Update the video's completion status
+            video.completed = isCompleted;
+            video.completionDate = isCompleted ? new Date().toISOString() : null;
+            
+            // Save to localStorage
+            saveTopicProgress();
+            
+            // Refresh UI
+            populateTopicCards();
+            updateCurrentTopicInfo();
+            populateQuickAccessTopics();
+            updateProgressBar();
+            
+            // Call placeholder function for checking local storage quota
+            checkLocalQuota();
+        }
+        
+        // Function to mark a specific quiz as completed or not completed
+        function markQuizComplete(topicId, quizId, isCompleted) {
+            // Find the topic
+            const topic = pdfFiles.find(t => t.id === topicId);
+            if (!topic) return;
+            
+            // Find the quiz object
+            const quiz = topic.quizzes.find(q => q.quizId === quizId);
+            if (!quiz) return;
+            
+            // Update the quiz's completion status
+            quiz.completed = isCompleted;
+            quiz.completionDate = isCompleted ? new Date().toISOString() : null;
+            
+            // Save to localStorage
+            saveTopicProgress();
+            
+            // Refresh UI
+            populateTopicCards();
+            updateCurrentTopicInfo();
+            populateQuickAccessTopics();
+            updateProgressBar();
+            
+            // Call placeholder function for checking local storage quota
+            checkLocalQuota();
+        }
+        
+        // Placeholder function for checking local storage quota
+        function checkLocalQuota() {
+            // This function will be implemented later
+            console.log('Local storage quota check placeholder');
+        }
+        
+        // Function to mark all videos and quizzes in a topic as completed
         function markTopicAsCompleted(topicId) {
             const topic = pdfFiles.find(t => t.id === topicId);
-            if (topic) {
-                // Mark all videos and quizzes as completed
-                topic.videos.forEach(video => {
-                    video.completed = true;
-                    video.completionDate = video.completionDate || new Date().toISOString();
-                });
-                topic.quizzes.forEach(quiz => {
-                    quiz.completed = true;
-                    quiz.completionDate = quiz.completionDate || new Date().toISOString();
-                });
-                
-                topic.current = false;
-                
-                // Automatically mark the next topic as current
-                const currentIndex = pdfFiles.findIndex(t => t.id === topicId);
-                if (currentIndex >= 0 && currentIndex < pdfFiles.length - 1) {
-                    const nextTopic = pdfFiles[currentIndex + 1];
-                    if (nextTopic) {
-                        nextTopic.current = true;
-                    }
+            if (!topic) return;
+            
+            // Mark all videos and quizzes as completed
+            topic.videos.forEach(video => {
+                video.completed = true;
+                video.completionDate = video.completionDate || new Date().toISOString();
+            });
+            
+            topic.quizzes.forEach(quiz => {
+                quiz.completed = true;
+                quiz.completionDate = quiz.completionDate || new Date().toISOString();
+            });
+            
+            topic.current = false;
+            
+            // Automatically mark the next topic as current
+            const currentIndex = pdfFiles.findIndex(t => t.id === topicId);
+            if (currentIndex >= 0 && currentIndex < pdfFiles.length - 1) {
+                const nextTopic = pdfFiles[currentIndex + 1];
+                if (nextTopic) {
+                    nextTopic.current = true;
                 }
-                
-                // Update local storage to persist completion status
-                saveTopicProgress();
-                
-                // Refresh the UI
-                populateTopicCards();
-                
-                // If a topic was completed, scroll to the next one
-                if (currentIndex < pdfFiles.length - 1) {
-                    const nextCard = document.getElementById(`topic-card-${pdfFiles[currentIndex + 1].id}`);
-                    if (nextCard) {
-                        setTimeout(() => {
-                            nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 100);
-                    }
+            }
+            
+            // Update local storage to persist completion status
+            saveTopicProgress();
+            
+            // Refresh the UI
+            populateTopicCards();
+            updateCurrentTopicInfo();
+            populateQuickAccessTopics();
+            updateProgressBar();
+            
+            // Call placeholder function for checking local storage quota
+            checkLocalQuota();
+            
+            // If a topic was completed, scroll to the next one in the study materials tab
+            if (currentIndex < pdfFiles.length - 1 && document.getElementById('content-study-materials').classList.contains('active')) {
+                const nextCard = document.getElementById(`topic-card-${pdfFiles[currentIndex + 1].id}`);
+                if (nextCard) {
+                    setTimeout(() => {
+                        nextCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 100);
                 }
             }
         }
@@ -1974,26 +2041,31 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             populateQuickAccessTopics();
         }
         
-        // Temporary function to handle completion change for individual items
+        // Function to handle completion change for individual items
         function handleItemCompletionChange(event) {
             const checkbox = event.target;
             const dataset = checkbox.dataset;
+            const isCompleted = checkbox.checked;
             
-            // Log the data attributes to the console
-            console.log('Checkbox changed:', {
-                topicId: dataset.topicId,
-                itemType: dataset.itemType,
-                quizId: dataset.quizId,
-                videoUrl: dataset.itemUrl,
-                checked: checkbox.checked
-            });
+            // Extract data from dataset
+            const topicId = dataset.topicId;
+            const itemType = dataset.itemType;
             
-            // Note: This is a temporary function that only logs to the console.
-            // In a future implementation, we would update the pdfFiles array and save to localStorage here.
+            if (itemType === 'video') {
+                // For videos, we use the item URL to identify them
+                const videoUrl = dataset.itemUrl;
+                markVideoComplete(topicId, videoUrl, isCompleted);
+            } else if (itemType === 'quiz') {
+                // For quizzes, we use the quiz ID to identify them
+                const quizId = dataset.quizId;
+                markQuizComplete(topicId, quizId, isCompleted);
+            }
         }
         
         // Make the topic functions available globally
         window.markTopicAsCompleted = markTopicAsCompleted;
+        window.markVideoComplete = markVideoComplete;
+        window.markQuizComplete = markQuizComplete;
         window.handleItemCompletionChange = handleItemCompletionChange;
     </script>
     
