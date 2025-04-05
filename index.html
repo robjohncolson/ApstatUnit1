@@ -318,6 +318,54 @@
             }
         }
         
+        // Function to save completion data to Supabase
+        async function saveCompletionToSupabase(itemType, itemIdentifier, unitId) {
+            console.log('DEBUG: >>> Entering saveCompletionToSupabase. User ID:', currentUserId, 'Item:', itemType, 'ID:', itemIdentifier, 'Unit:', unitId);
+
+            // Re-verify User ID inside the function
+            if (!currentUserId) {
+                console.warn('DEBUG: >>> No user ID found inside saveCompletionToSupabase. Skipping Supabase save.');
+                return; // Exit if no user ID
+            }
+
+            // Prepare the data object
+            const completionData = {
+                user_id: currentUserId,
+                item_type: itemType,
+                item_identifier: itemIdentifier,
+                unit_id: unitId,
+                completed_at: new Date().toISOString()
+            };
+            console.log('DEBUG: >>> Preparing to insert this data:', completionData);
+
+            // Attempt the Supabase insert using the correct client variable name
+            try {
+                console.log('DEBUG: >>> Calling supabaseClient.from(\'completions\').insert()...'); // Use supabaseClient
+                const { data, error } = await supabaseClient // Use supabaseClient
+                    .from('completions')
+                    .insert(completionData);
+
+                // Log the raw response from Supabase
+                console.log('DEBUG: >>> Supabase insert response:', { data, error });
+
+                // Check specifically for an error object in the response
+                if (error) {
+                    console.error('DEBUG: >>> Supabase insert returned an error object:', error);
+                    // Do NOT call checkLocalQuota() if there was an error
+                } else {
+                    // If error is null, the operation was likely successful on Supabase's side
+                    console.log(`DEBUG: >>> Completion save to Supabase seems successful: ${itemType} - ${itemIdentifier}`);
+                    // Call the next step ONLY on success
+                    checkLocalQuota(); // Moved inside the 'else' block
+                }
+
+            } catch (error) {
+                // Catch any network errors or errors thrown from the try block
+                console.error('DEBUG: >>> CATCH block: Error during Supabase insert attempt:', error);
+            }
+            console.log('DEBUG: >>> Exiting saveCompletionToSupabase.');
+        }
+        
         // Flowchart Mermaid Definition
         const flowchartDefinition = `flowchart TD
     A[Start Learning Session] --> B[Gather All Materials]
@@ -1201,6 +1249,12 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             populateQuickAccessTopics();
             updateProgressBar();
             
+            console.log(`DEBUG: Before Supabase Check. currentUserId:`, currentUserId);
+            if (currentUserId) {
+                // If a user is identified, save completion to Supabase
+                saveCompletionToSupabase('video', videoUrl, '1');
+            }
+            
             // Call placeholder function for checking local storage quota
             checkLocalQuota();
         }
@@ -1227,6 +1281,12 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             updateCurrentTopicInfo();
             populateQuickAccessTopics();
             updateProgressBar();
+            
+            console.log(`DEBUG: Before Supabase Check. currentUserId:`, currentUserId);
+            if (currentUserId) {
+                // If a user is identified, save completion to Supabase
+                saveCompletionToSupabase('quiz', quizId, '1');
+            }
             
             // Call placeholder function for checking local storage quota
             checkLocalQuota();
@@ -1724,9 +1784,10 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                         }
                         
                         if (quiz.answersPdf) {
-                            const answerTitle = currentTopic.isCapstone ? "FRQ Answers PDF" : "Download Answers PDF";
+                            const answerTitle = currentTopic.isCapstone ? "FRQ Answers PDF" : "Answers PDF";
                             quizLinksHTML += `
-                            <div class="flex items-center mb-2">
+                            <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center">
                                 <input 
                                     type="checkbox" 
                                     id="current-quiz-${currentTopic.id}-${quiz.quizId}-answers" 
