@@ -234,6 +234,15 @@
     
     <!-- Scripts -->
     <script>
+        // Supabase initialization
+        const SUPABASE_URL = 'https://your-supabase-url.supabase.co';
+        const SUPABASE_ANON_KEY = 'your-supabase-anon-key';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Global user variables
+        let currentUsername = null;
+        let currentUserId = null;
+        
         // Flowchart Mermaid Definition
         const flowchartDefinition = `flowchart TD
     A[Start Learning Session] --> B[Gather All Materials]
