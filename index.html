@@ -1427,7 +1427,10 @@ Thank you for helping me prepare for my AP Statistics exam!`;
         }
         
         // Document ready function
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Call identifyUser first
+            await identifyUser();
+            
             // Set Grok prompt content
             document.getElementById('grok-prompt').textContent = grokPrompt;
             
