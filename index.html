@@ -237,11 +237,86 @@
         // Supabase initialization
         const SUPABASE_URL = 'https://rmqetzxoqupnggltuzqf.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtcWV0enhvcXVwbmdnbHR1enFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM3MjM2NzAsImV4cCI6MjA1OTI5OTY3MH0.9I56L1kC_4JJr_u9LuDgQ2ZV5C0y_-yic828UeCiuUk';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // Global user variables
         let currentUsername = null;
         let currentUserId = null;
+        
+        // User identification function
+        async function identifyUser() {
+            // Step 1: Get values from localStorage
+            currentUsername = localStorage.getItem('apStatsUsername');
+            currentUserId = localStorage.getItem('apStatsUserId');
+            
+            // Step 2: Check if username is null or empty
+            if (!currentUsername) {
+                // Ask user for their username
+                const username = prompt("Enter your username (visible to others):");
+                
+                // If user cancels or enters nothing, return early
+                if (!username) {
+                    console.warn("User identification cancelled or empty username entered");
+                    return;
+                }
+                
+                // Store username and reset userId
+                localStorage.setItem('apStatsUsername', username);
+                currentUsername = username;
+                currentUserId = null;
+                localStorage.removeItem('apStatsUserId');
+            }
+            
+            // Step 3: If we have username but no userId, look up or create in database
+            if (currentUsername && !currentUserId) {
+                try {
+                    // Try to find existing user
+                    const result = await supabaseClient
+                        .from('users')
+                        .select('id')
+                        .eq('username', currentUsername)
+                        .maybeSingle();
+                    
+                    // Handle potential errors in the query itself
+                    if (result.error && result.error.message !== 'Row not found') {
+                        throw result.error;
+                    }
+                    
+                    // If user exists, store their ID
+                    if (result.data) {
+                        currentUserId = result.data.id;
+                    } else {
+                        // User not found, create new user
+                        const insertResult = await supabaseClient
+                            .from('users')
+                            .insert({ username: currentUsername })
+                            .select()
+                            .single();
+                        
+                        // Check for insert errors
+                        if (insertResult.error) {
+                            throw insertResult.error;
+                        }
+                        
+                        // Store the new user's ID
+                        currentUserId = insertResult.data.id;
+                    }
+                    
+                    // Save userId to localStorage if we have one
+                    if (currentUserId) {
+                        localStorage.setItem('apStatsUserId', currentUserId);
+                    }
+                    
+                    console.log(`User identified: ${currentUsername} (ID: ${currentUserId})`);
+                    
+                } catch (error) {
+                    // Handle errors from Supabase
+                    console.error("Error connecting to database:", error);
+                    alert('Could not connect to online progress tracker. Progress will only be saved locally.');
+                    currentUserId = null;
+                }
+            }
+        }
         
         // Flowchart Mermaid Definition
         const flowchartDefinition = `flowchart TD
