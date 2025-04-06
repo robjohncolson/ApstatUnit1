@@ -2657,6 +2657,155 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             
             container.innerHTML = statusHtml;
         }
+        
+        // Function to fetch and display peer quota achievements
+        async function fetchAndDisplayPeerQuotas() {
+            const tableContainer = document.getElementById('peer-quota-table-container');
+            const loadingEl = document.getElementById('peer-quota-loading');
+            const tableEl = document.getElementById('peer-quota-table');
+            
+            // Show loading and clear table
+            loadingEl.style.display = 'block';
+            tableEl.innerHTML = '';
+            
+            try {
+                // Calculate date ranges for filtering
+                const today = new Date();
+                const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD
+                
+                // Get start of current week (Sunday)
+                const currentWeekStart = new Date(today);
+                const dayOfWeek = currentWeekStart.getDay(); // 0 for Sunday, 1 for Monday, etc.
+                currentWeekStart.setDate(currentWeekStart.getDate() - dayOfWeek);
+                const weekStartStr = currentWeekStart.toISOString().split('T')[0];
+                
+                // Get date 30 days ago for month view
+                const thirtyDaysAgo = new Date(today);
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+                
+                // Fetch all users
+                const { data: users, error: usersError } = await supabaseClient
+                    .from('users')
+                    .select('id, username')
+                    .order('username');
+                
+                if (usersError) {
+                    throw new Error(`Error fetching users: ${usersError.message}`);
+                }
+                
+                if (!users || users.length === 0) {
+                    tableEl.innerHTML = `<p class="text-gray-500">No users found in the system.</p>`;
+                    return;
+                }
+                
+                // Create map of user IDs to usernames
+                const userMap = {};
+                users.forEach(user => {
+                    userMap[user.id] = user.username;
+                });
+                
+                // Fetch quota completions for the last 30 days
+                const { data: quotas, error: quotasError } = await supabaseClient
+                    .from('daily_quotas_met')
+                    .select('user_id, quota_date')
+                    .gte('quota_date', thirtyDaysAgoStr)
+                    .order('quota_date');
+                
+                if (quotasError) {
+                    throw new Error(`Error fetching quotas: ${quotasError.message}`);
+                }
+                
+                // Prepare user quota stats
+                const userStats = {};
+                
+                // Initialize stats for all users
+                users.forEach(user => {
+                    userStats[user.id] = {
+                        username: user.username,
+                        today: 0,
+                        week: 0,
+                        month: 0
+                    };
+                });
+                
+                // Process quota data
+                if (quotas && quotas.length > 0) {
+                    quotas.forEach(quota => {
+                        const userId = quota.user_id;
+                        const quotaDate = quota.quota_date;
+                        
+                        // Skip if user not found in our map
+                        if (!userStats[userId]) return;
+                        
+                        // Increment month count (all fetched quotas are within the month)
+                        userStats[userId].month++;
+                        
+                        // Check if quota is from current week
+                        if (quotaDate >= weekStartStr) {
+                            userStats[userId].week++;
+                            
+                            // Check if quota is from today
+                            if (quotaDate === todayStr) {
+                                userStats[userId].today++;
+                            }
+                        }
+                    });
+                }
+                
+                // Sort users by monthly quota count (descending)
+                const sortedUsers = Object.values(userStats).sort((a, b) => b.month - a.month);
+                
+                // Create table HTML
+                let tableHtml = `
+                    <table class="min-w-full bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="py-2 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                                <th class="py-2 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Today</th>
+                                <th class="py-2 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">This Week</th>
+                                <th class="py-2 px-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">30 Days</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                `;
+                
+                // Add rows for each user
+                sortedUsers.forEach((stats, index) => {
+                    // Highlight current user
+                    const isCurrentUser = stats.username === currentUsername;
+                    const rowClass = isCurrentUser ? 'bg-blue-50' : (index % 2 === 0 ? 'bg-gray-50' : 'bg-white');
+                    const textClass = isCurrentUser ? 'font-medium text-blue-800' : '';
+                    
+                    tableHtml += `
+                        <tr class="${rowClass}">
+                            <td class="py-2 px-4 text-sm ${textClass}">${stats.username}${isCurrentUser ? ' (you)' : ''}</td>
+                            <td class="py-2 px-4 text-sm text-center ${textClass}">${stats.today}</td>
+                            <td class="py-2 px-4 text-sm text-center ${textClass}">${stats.week}</td>
+                            <td class="py-2 px-4 text-sm text-center ${textClass}">${stats.month}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHtml += `
+                        </tbody>
+                    </table>
+                    <p class="mt-2 text-xs text-gray-500">Last updated: ${new Date().toLocaleString()}</p>
+                `;
+                
+                tableEl.innerHTML = tableHtml;
+                
+            } catch (err) {
+                tableEl.innerHTML = `
+                    <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p class="text-red-700">Error fetching peer quota data: ${err.message || 'Unknown error'}</p>
+                    </div>
+                `;
+            } finally {
+                // Hide loading message
+                loadingEl.style.display = 'none';
+            }
+        }
     </script>
     
     <!-- React Component -->
