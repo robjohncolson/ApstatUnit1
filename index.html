@@ -266,6 +266,50 @@
     
     <!-- Scripts -->
     <script>
+                // Function to check quota status and apply/remove visual indicator
+                async function updateQuotaMetVisualIndicator() {
+            console.log('DEBUG (VisualIndicator): Checking quota status for visual update...');
+            if (!currentUserId) {
+                console.log('DEBUG (VisualIndicator): No user ID, removing class.');
+                document.body.classList.remove('quota-met-today');
+                return;
+            }
+
+            // Get today's UTC date string
+            const todayUTC = new Date();
+            const todayDateString = new Date(Date.UTC(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), todayUTC.getUTCDate())).toISOString().split('T')[0];
+
+            try {
+                // Check if a record exists for this user and date in daily_quotas_met
+                // We only need to know if it exists, so maybeSingle() is efficient
+                const { data, error } = await supabaseClient
+                    .from('daily_quotas_met')
+                    .select('id') // Select a minimal column
+                    .eq('user_id', currentUserId)
+                    .eq('quota_date', todayDateString)
+                    .maybeSingle(); // Returns the record or null
+
+                if (error) {
+                    console.error('DEBUG (VisualIndicator): Error checking quota status:', error);
+                    document.body.classList.remove('quota-met-today'); // Remove on error
+                    return;
+                }
+
+                if (data) {
+                    // Record exists - quota met today
+                    console.log('DEBUG (VisualIndicator): Quota met, adding class.');
+                    document.body.classList.add('quota-met-today');
+                } else {
+                    // No record - quota not met today
+                    console.log('DEBUG (VisualIndicator): Quota not met, removing class.');
+                    document.body.classList.remove('quota-met-today');
+                }
+
+            } catch (err) {
+                console.error('DEBUG (VisualIndicator): Exception during quota check:', err);
+                document.body.classList.remove('quota-met-today'); // Remove on exception
+            }
+        }
         // In Unit 1's index.html
         const UNIT_ID = '1';
         // Supabase initialization
@@ -370,7 +414,7 @@
                     if (currentUserId) {
                         localStorage.setItem('apStatsUserId', currentUserId);
                     }
-                    
+                    await updateQuotaMetVisualIndicator(); // Add this line]tVisualIndicator(); // Add this line
                     console.log(`User identified: ${currentUsername} (ID: ${currentUserId})`);
                     
                 } catch (error) {
@@ -1817,6 +1861,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 // Remove class on error
                 document.body.classList.remove('quota-met-today');
             }
+            await updateQuotaMetVisualIndicator();
+
         }
         
         // Function to mark all videos and quizzes in a topic as completed
