@@ -2344,6 +2344,38 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 console.log("User not identified, cannot sync yet.");
             }
         });
+        
+        // Initialize overall progress tab if that tab is initially selected
+        if (document.getElementById('tab-overall-progress').classList.contains('active')) {
+            displayOverallProgress();
+        }
+        
+        // Function to display overall progress information
+        async function displayOverallProgress() {
+            try {
+                // Show loading message and hide/clear other content initially
+                const loadingEl = document.getElementById('overall-progress-loading');
+                loadingEl.style.display = 'block';
+                
+                // Clear/hide other container contents
+                document.getElementById('dot-plot-container').innerHTML = '';
+                document.getElementById('remaining-items').innerHTML = '';
+                document.getElementById('flexible-quota').innerHTML = '';
+                document.getElementById('todays-quota-status').innerHTML = '';
+                document.getElementById('peer-quota-table').innerHTML = '';
+                document.getElementById('peer-quota-loading').style.display = 'none';
+                
+                // Call functions to populate different sections
+                await displaySupabaseDotPlot();
+                displayRemainingItemCounts();
+                displayFlexibleQuota();
+                displayTodaysQuotaStatus();
+                await fetchAndDisplayPeerQuotas();
+            } finally {
+                // Hide loading message after all operations complete (even if there was an error)
+                document.getElementById('overall-progress-loading').style.display = 'none';
+            }
+        }
     </script>
     
     <!-- React Component -->
