@@ -1,0 +1,1 @@
+f=open('index.html','r'); lines=f.readlines(); f.close(); f=open('index.html.new','w'); f.writelines(lines[:3215] + lines[3275:]); f.close()

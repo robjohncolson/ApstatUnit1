@@ -3213,6 +3213,66 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             container.innerHTML = statusHtml;
         }
         
+        // Function to calculate dynamic quota targets based on remaining course content and time
+        async function calculateDynamicQuota() {
+            try {
+                // Get total counts and calculate days remaining
+                if (typeof ALL_UNITS_DATA === 'undefined' || !Array.isArray(ALL_UNITS_DATA)) {
+                    return { 
+                        requiredVideosPerDay: 5, 
+                        requiredQuizzesPerDay: 3,
+                        daysRemaining: 0,
+                        error: "Course data not available" 
+                    };
+                }
+                
+                const { totalVideos, totalQuizzes, completedVideos, completedQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
+                
+                // Calculate remaining items
+                const remainingVideos = Math.max(0, totalVideos - completedVideos);
+                const remainingQuizzes = Math.max(0, totalQuizzes - completedQuizzes);
+                
+                // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
+                const today = new Date();
+                const examDate = new Date('May 8, 2025');
+                
+                if (today > examDate) {
+                    return {
+                        requiredVideosPerDay: remainingVideos,
+                        requiredQuizzesPerDay: remainingQuizzes,
+                        daysRemaining: 0,
+                        error: null
+                    };
+                }
+                
+                const timeDiff = examDate.getTime() - today.getTime();
+                const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                
+                // Calculate minimum required videos/quizzes per day
+                let requiredVideosPerDay = daysRemaining > 0 ? Math.ceil(remainingVideos / daysRemaining) : remainingVideos;
+                let requiredQuizzesPerDay = daysRemaining > 0 ? Math.ceil(remainingQuizzes / daysRemaining) : remainingQuizzes;
+                
+                // Apply minimum daily quota (at least 1 of each if there are any remaining)
+                requiredVideosPerDay = remainingVideos > 0 ? Math.max(1, requiredVideosPerDay) : 0;
+                requiredQuizzesPerDay = remainingQuizzes > 0 ? Math.max(1, requiredQuizzesPerDay) : 0;
+                
+                return {
+                    requiredVideosPerDay,
+                    requiredQuizzesPerDay,
+                    daysRemaining,
+                    error: null
+                };
+            } catch (error) {
+                console.error('Error calculating dynamic quota targets:', error);
+                return {
+                    requiredVideosPerDay: 5, // Default fallback
+                    requiredQuizzesPerDay: 3, // Default fallback
+                    daysRemaining: 0,
+                    error: error.message || "Unknown error calculating quota"
+                };
+            }
+        }
+        
         // Function to calculate the dynamic flexible daily quota
         async function calculateDynamicQuota() {
             const defaultQuota = { requiredVideosPerDay: 0, requiredQuizzesPerDay: 0, daysRemaining: 0, error: null };
