@@ -1,37 +1,78 @@
-LPS+ColsonR@LPS-5CD32865BG MINGW64 ~/Downloads/ApstatUnit1 (main)
-$ ls -R
+LPS+ColsonR@LPS-5CD32865BG MINGW64 ~/Downloads/apstat/unit 1 (main)
+$ ls -lR
 .:
-Index-reference-spec.gemini.json  gemini-index-spec-maker.txt      index.html         ls-output.txt  pdfs/
-claude-build-prompt.txt           grok-gather-material-prompt.txt  knowledge-tree.md  media-map.md   rename_pdfs.py*
+total 194
+-rw-r--r-- 1 LPS+ColsonR 4096  10886 Apr  5 21:28 Index-reference-spec.gemini.json
+-rw-r--r-- 1 LPS+ColsonR 4096   2116 Apr  5 21:28 RELEASE_NOTES.md
+-rw-r--r-- 1 LPS+ColsonR 4096    177 Apr  2 19:09 check-reference.py
+-rw-r--r-- 1 LPS+ColsonR 4096   2670 Apr  2 19:09 claude-build-prompt.txt
+-rw-r--r-- 1 LPS+ColsonR 4096     89 Apr  2 19:09 gemini-index-spec-maker.txt
+-rw-r--r-- 1 LPS+ColsonR 4096   2126 Apr  2 19:09 grok-gather-material-prompt.txt
+-rw-r--r-- 1 LPS+ColsonR 4096 134761 Apr  5 21:41 index.html
+drwxr-xr-x 1 LPS+ColsonR 4096      0 Apr  5 22:23 js/
+-rw-r--r-- 1 LPS+ColsonR 4096   6813 Apr  2 19:09 knowledge-tree.md
+-rw-r--r-- 1 LPS+ColsonR 4096   2773 Apr  2 19:09 ls-output.txt
+-rw-r--r-- 1 LPS+ColsonR 4096   7154 Apr  2 19:09 media-map.md
+drwxr-xr-x 1 LPS+ColsonR 4096      0 Apr  2 19:09 pdfs/
+-rwxr-xr-x 1 LPS+ColsonR 4096   3487 Apr  2 19:09 rename_pdfs.py*
+-rw-r--r-- 1 LPS+ColsonR 4096  10196 Apr  5 21:28 transition-instructions.md
+
+./js:
+total 96
+-rw-r--r-- 1 LPS+ColsonR 4096 94487 Apr  5 22:23 allUnitsData.js
 
 ./pdfs:
-UnitWeights.pdf  unit1/
+total 244
+-rw-r--r-- 1 LPS+ColsonR 4096 239835 Apr  2 19:09 UnitWeights.pdf
+drwxr-xr-x 1 LPS+ColsonR 4096      0 Apr  2 19:09 unit1/
 
 ./pdfs/unit1:
-1.10_answers.pdf  1.2_quiz.pdf     1.4_answers.pdf  1.5_quiz.pdf     1.7_answers.pdf  1.8_quiz.pdf     original_files/           unit1_pc_mcq_parta_answers.pdf
-1.10_quiz.pdf     1.3_answers.pdf  1.4_quiz.pdf     1.6_answers.pdf  1.7_quiz.pdf     1.9_answers.pdf  unit1_pc_frq_answers.pdf  unit1_pc_mcq_partb_answers.pdf
-1.2_answers.pdf   1.3_quiz.pdf     1.5_answers.pdf  1.6_quiz.pdf     1.8_answers.pdf  1.9_quiz.pdf     unit1_pc_frq_quiz.pdf
+total 4552
+-rw-r--r-- 1 LPS+ColsonR 4096 252001 Apr  2 19:09 1.10_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 105017 Apr  2 19:09 1.10_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  72621 Apr  2 19:09 1.2_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  61083 Apr  2 19:09 1.2_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 105904 Apr  2 19:09 1.3_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  70247 Apr  2 19:09 1.3_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 328183 Apr  2 19:09 1.4_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 302309 Apr  2 19:09 1.4_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  68094 Apr  2 19:09 1.5_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  57585 Apr  2 19:09 1.5_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 132921 Apr  2 19:09 1.6_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 129447 Apr  2 19:09 1.6_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 348446 Apr  2 19:09 1.7_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 250456 Apr  2 19:09 1.7_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 140773 Apr  2 19:09 1.8_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 130114 Apr  2 19:09 1.8_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 275276 Apr  2 19:09 1.9_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 258285 Apr  2 19:09 1.9_quiz.pdf
+drwxr-xr-x 1 LPS+ColsonR 4096      0 Apr  2 19:09 original_files/
+-rw-r--r-- 1 LPS+ColsonR 4096 173829 Apr  2 19:09 unit1_pc_frq_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  91837 Apr  2 19:09 unit1_pc_frq_quiz.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 650498 Apr  2 19:09 unit1_pc_mcq_parta_answers.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 596497 Apr  2 19:09 unit1_pc_mcq_partb_answers.pdf
 
 ./pdfs/unit1/original_files:
-SG_ComparingDistributionsofaQuantitativeVariableQuiz_67ed2d7ac20979.67ed2d7bde4197.85847118.pdf
-SG_DescribingtheDistributionofaQuantitativeVariableQuiz_67ed2c904e1c96.67ed2c9127f3e4.62961223.pdf
-SG_GraphicalRepresentationsofSummaryStatisticsQuiz_67ed2d3c1e38c9.67ed2d3ce96076.26789402.pdf
-SG_RepresentingaCategoricalVariablewithGraphsQuiz_67ed2c06864248.67ed2c07bc6c55.08599768.pdf
-SG_RepresentingaCategoricalVariablewithTablesQuiz_67ed2b7ba74c00.67ed2b7c8ff1e2.95093309.pdf
-SG_RepresentingaQuantitativeVariablewithGraphsQuiz_67ed2c4a8004b3.67ed2c4b4a3f60.10148866.pdf
-SG_SummaryStatisticsforaQuantitativeVariableQuiz_67ed2cd7e2a033.67ed2cd93b7149.83841925.pdf
-SG_TheLanguageofVariationVariablesQuiz_67ed2b299a9fa1.67ed2b2a7c5f55.89333974.pdf
-SG_TheNormalDistributionQuiz_67ed2e1de32ed7.67ed2e1f437061.68372974.pdf
-SG_Unit1ProgressCheckFRQ_67ed2e76c9d419.67ed2e77d7b4c9.25964925.pdf
-SG_Unit1ProgressCheckMCQPartA_67ed2e51377607.67ed2e52bb2764.50886060.pdf
-SG_Unit1ProgressCheckMCQPartB_67ed2e61e02692.67ed2e639760f3.84751179.pdf
-TB_ComparingDistributionsofaQuantitativeVariableQuiz_67ed2d7f498450.67ed2d804e7ec1.73767811.pdf
-TB_DescribingtheDistributionofaQuantitativeVariableQuiz_67ed2c8bcac483.67ed2c8ca26f46.13124856.pdf
-TB_GraphicalRepresentationsofSummaryStatisticsQuiz_67ed2d37c9f7e4.67ed2d389d9286.33341792.pdf
-TB_RepresentingaCategoricalVariablewithGraphsQuiz_67ed2c00f1d3d2.67ed2c0216c242.84081819.pdf
-TB_RepresentingaCategoricalVariablewithTablesQuiz_67ed2b780efaa8.67ed2b78ce8882.13184567.pdf
-TB_RepresentingaQuantitativeVariablewithGraphsQuiz_67ed2c47865140.67ed2c4853a2e5.90850443.pdf
-TB_SummaryStatisticsforaQuantitativeVariableQuiz_67ed2cdc97f8d1.67ed2cddcb5a10.27904925.pdf
-TB_TheLanguageofVariationVariablesQuiz_67ed2b25067297.67ed2b25d01e83.98921216.pdf
-TB_TheNormalDistributionQuiz_67ed2e220b9a70.67ed2e2331b161.37969293.pdf
-TB_Unit1ProgressCheckFRQ_67ed2e733762a9.67ed2e74195952.12409363.pdf
+total 4540
+-rw-r--r-- 1 LPS+ColsonR 4096 275276 Apr  2 19:09 SG_ComparingDistributionsofaQuantitativeVariableQuiz_67ed2d7ac20979.67ed2d7bde4197.85847118.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 132921 Apr  2 19:09 SG_DescribingtheDistributionofaQuantitativeVariableQuiz_67ed2c904e1c96.67ed2c9127f3e4.62961223.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 140773 Apr  2 19:09 SG_GraphicalRepresentationsofSummaryStatisticsQuiz_67ed2d3c1e38c9.67ed2d3ce96076.26789402.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 328183 Apr  2 19:09 SG_RepresentingaCategoricalVariablewithGraphsQuiz_67ed2c06864248.67ed2c07bc6c55.08599768.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 105904 Apr  2 19:09 SG_RepresentingaCategoricalVariablewithTablesQuiz_67ed2b7ba74c00.67ed2b7c8ff1e2.95093309.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  68094 Apr  2 19:09 SG_RepresentingaQuantitativeVariablewithGraphsQuiz_67ed2c4a8004b3.67ed2c4b4a3f60.10148866.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 348446 Apr  2 19:09 SG_SummaryStatisticsforaQuantitativeVariableQuiz_67ed2cd7e2a033.67ed2cd93b7149.83841925.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  72621 Apr  2 19:09 SG_TheLanguageofVariationVariablesQuiz_67ed2b299a9fa1.67ed2b2a7c5f55.89333974.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 252001 Apr  2 19:09 SG_TheNormalDistributionQuiz_67ed2e1de32ed7.67ed2e1f437061.68372974.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 173829 Apr  2 19:09 SG_Unit1ProgressCheckFRQ_67ed2e76c9d419.67ed2e77d7b4c9.25964925.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 650498 Apr  2 19:09 SG_Unit1ProgressCheckMCQPartA_67ed2e51377607.67ed2e52bb2764.50886060.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 596497 Apr  2 19:09 SG_Unit1ProgressCheckMCQPartB_67ed2e61e02692.67ed2e639760f3.84751179.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 258285 Apr  2 19:09 TB_ComparingDistributionsofaQuantitativeVariableQuiz_67ed2d7f498450.67ed2d804e7ec1.73767811.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 129447 Apr  2 19:09 TB_DescribingtheDistributionofaQuantitativeVariableQuiz_67ed2c8bcac483.67ed2c8ca26f46.13124856.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 130114 Apr  2 19:09 TB_GraphicalRepresentationsofSummaryStatisticsQuiz_67ed2d37c9f7e4.67ed2d389d9286.33341792.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 302309 Apr  2 19:09 TB_RepresentingaCategoricalVariablewithGraphsQuiz_67ed2c00f1d3d2.67ed2c0216c242.84081819.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  70247 Apr  2 19:09 TB_RepresentingaCategoricalVariablewithTablesQuiz_67ed2b780efaa8.67ed2b78ce8882.13184567.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  57585 Apr  2 19:09 TB_RepresentingaQuantitativeVariablewithGraphsQuiz_67ed2c47865140.67ed2c4853a2e5.90850443.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 250456 Apr  2 19:09 TB_SummaryStatisticsforaQuantitativeVariableQuiz_67ed2cdc97f8d1.67ed2cddcb5a10.27904925.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  61083 Apr  2 19:09 TB_TheLanguageofVariationVariablesQuiz_67ed2b25067297.67ed2b25d01e83.98921216.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096 105017 Apr  2 19:09 TB_TheNormalDistributionQuiz_67ed2e220b9a70.67ed2e2331b161.37969293.pdf
+-rw-r--r-- 1 LPS+ColsonR 4096  91837 Apr  2 19:09 TB_Unit1ProgressCheckFRQ_67ed2e733762a9.67ed2e74195952.12409363.pdf
