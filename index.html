@@ -390,6 +390,63 @@
             console.log('DEBUG: >>> Exiting saveCompletionToSupabase.');
         }
         
+        // Function to synchronize offline completion queue with Supabase
+        async function syncOfflineQueue() {
+            // Only run if we have a user ID and the browser thinks it's online
+            if (!currentUserId || !navigator.onLine) return;
+            
+            // Read the queue from localStorage
+            let queue = JSON.parse(localStorage.getItem('offlineCompletionQueue') || '[]');
+            
+            // If queue is empty, log and return
+            if (queue.length === 0) {
+                console.log("DEBUG: Offline queue is empty.");
+                return;
+            }
+            
+            // Log the sync attempt
+            console.log(`DEBUG: Attempting to sync ${queue.length} items from offline queue.`);
+            
+            // Array to track items that were successfully synced
+            let successfullySyncedTimestamps = [];
+            
+            // Process each item in the queue
+            for (const item of queue) {
+                try {
+                    // Log the individual sync attempt
+                    console.log("DEBUG: Attempting sync for item:", item);
+                    
+                    // Ensure user_id is current (safety check)
+                    item.user_id = currentUserId;
+                    
+                    // Attempt to insert the item into Supabase
+                    const { error } = await supabaseClient.from('completions').insert(item);
+                    
+                    // Check the response
+                    if (error) {
+                        // Log failure but leave item in queue
+                        console.warn("DEBUG: Failed to sync item from queue:", error, item);
+                    } else {
+                        // Log success and track item for removal
+                        console.log("DEBUG: Successfully synced item:", item);
+                        successfullySyncedTimestamps.push(item.queueTimestamp);
+                    }
+                } catch (syncError) {
+                    // Log error during sync attempt (item stays in queue)
+                    console.error("DEBUG: Error during individual queue item sync attempt:", syncError, item);
+                }
+            }
+            
+            // Filter the queue to remove successfully synced items
+            const newQueue = queue.filter(item => !successfullySyncedTimestamps.includes(item.queueTimestamp));
+            
+            // Save the updated queue back to localStorage
+            localStorage.setItem('offlineCompletionQueue', JSON.stringify(newQueue));
+            
+            // Log final status
+            console.log(`DEBUG: Offline queue sync complete. ${successfullySyncedTimestamps.length} items synced. ${newQueue.length} items remain.`);
+        }
+        
         // Flowchart Mermaid Definition
         const flowchartDefinition = `flowchart TD
     A[Start Learning Session] --> B[Gather All Materials]
