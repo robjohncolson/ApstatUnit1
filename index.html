@@ -23,6 +23,9 @@
     <!-- Supabase JS SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <!-- QR Code Generator Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    
     
     <style>
         .tab-content {
@@ -66,6 +69,15 @@
                 <span class="font-semibold">Exam Weight:</span> Unit 1 represents 15-23% of the AP Statistics Exam
             </div>
         </header>
+        
+        <!-- QR Code Section -->
+        <div class="my-4 flex flex-col items-center">
+            <div id="qrcode-container" class="p-2 bg-white border border-gray-300 rounded-lg shadow-sm inline-block">
+                <!-- QR code will be rendered here -->
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Scan for page link</p>
+        </div>
+        <!-- End QR Code Section -->
         
         <!-- Tab Navigation -->
         <div class="flex mb-0 border-b border-gray-200">
@@ -2018,6 +2030,35 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 await syncOfflineQueue();
                 // await syncLocalStorageToSupabase(); // Disabled to prevent potential duplicate entries from race conditions
             }
+            
+            // --- Generate QR Code ---
+            try {
+                const qrCodeContainer = document.getElementById('qrcode-container');
+                const currentUrl = window.location.href; // Get the current page URL dynamically
+                
+                if (qrCodeContainer && typeof QRCode !== 'undefined') {
+                     // Clear previous QR code if any (useful for testing/reloads)
+                     qrCodeContainer.innerHTML = ''; 
+                     
+                     new QRCode(qrCodeContainer, {
+                        text: currentUrl,
+                        width: 100, // Adjust size as needed
+                        height: 100, // Adjust size as needed
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H // High correction level
+                     });
+                     console.log('DEBUG: QR Code generated for URL:', currentUrl);
+                } else {
+                     console.error('ERROR: QR Code container or library not found.');
+                     if(qrCodeContainer) qrCodeContainer.innerHTML = '<p class="text-red-500 text-xs p-2">Error loading QR code.</p>';
+                }
+            } catch(qrError) {
+                 console.error('ERROR: Failed to generate QR code:', qrError);
+                 const qrCodeContainer = document.getElementById('qrcode-container');
+                 if(qrCodeContainer) qrCodeContainer.innerHTML = '<p class="text-red-500 text-xs p-2">Error generating QR code.</p>';
+            }
+            // --- End Generate QR Code ---
             
             // Set Grok prompt content
             document.getElementById('grok-prompt').textContent = grokPrompt;
