@@ -2695,6 +2695,139 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 
                 console.log('DEBUG (DotPlot): Bin Counts:', binCounts);
                 
+                // Helper function to format bin labels based on timeUnit
+                function formatBinLabel(startDate, endDate, timeUnit) {
+                    const start = new Date(startDate);
+                    const end = new Date(endDate);
+                    
+                    if (timeUnit === 'hours') {
+                        // Format like "Apr 6, 10am-11am"
+                        const startMonth = start.toLocaleString('en-US', { month: 'short' });
+                        const startDay = start.getDate();
+                        const startHour = start.getHours();
+                        const endHour = end.getHours();
+                        
+                        const formatHour = (hour) => {
+                            if (hour === 0) return '12am';
+                            if (hour === 12) return '12pm';
+                            return hour < 12 ? `${hour}am` : `${hour - 12}pm`;
+                        };
+                        
+                        return `${startMonth} ${startDay}, ${formatHour(startHour)}-${formatHour(endHour)}`;
+                    } else if (timeUnit === 'days') {
+                        // Format like "Apr 6-7"
+                        const startMonth = start.toLocaleString('en-US', { month: 'short' });
+                        const startDay = start.getDate();
+                        
+                        // Check if end date is in the same month
+                        const endMonth = end.toLocaleString('en-US', { month: 'short' });
+                        const endDay = end.getDate() - 1; // Subtract 1 as the end is exclusive
+                        
+                        if (startMonth === endMonth) {
+                            return startDay === endDay 
+                                ? `${startMonth} ${startDay}` 
+                                : `${startMonth} ${startDay}-${endDay}`;
+                        } else {
+                            return `${startMonth} ${startDay}-${endMonth} ${endDay}`;
+                        }
+                    } else if (timeUnit === 'weeks') {
+                        // Format like "Week of Apr 1"
+                        const startMonth = start.toLocaleString('en-US', { month: 'short' });
+                        const startDay = start.getDate();
+                        return `Week of ${startMonth} ${startDay}`;
+                    } else {
+                        // Format like "Apr 2025"
+                        const startMonth = start.toLocaleString('en-US', { month: 'short' });
+                        const startYear = start.getFullYear();
+                        return `${startMonth} ${startYear}`;
+                    }
+                }
+                
+                // Initialize the HTML for the dot plot
+                let dotPlotHtml = `
+                    <h3 class="text-lg font-semibold mb-3 text-indigo-800">Overall Completions Logged Online</h3>
+                    <div class="mt-2 mb-4 text-sm text-gray-500">Each dot represents one completed item</div>
+                    <div class="space-y-2 p-2 bg-gray-50 rounded-lg">
+                `;
+                
+                // Generate the HTML for each bin
+                for (let i = 0; i < 5; i++) {
+                    const count = binCounts[i];
+                    const startDate = binBoundaries[i].start;
+                    const endDate = binBoundaries[i].end;
+                    const binLabel = formatBinLabel(startDate, endDate, timeUnit);
+                    
+                    // Generate the dots
+                    let dots = '';
+                    for (let j = 0; j < count; j++) {
+                        dots += `<span class="inline-block w-3 h-3 bg-indigo-500 rounded-full mx-1"></span>`;
+                    }
+                    
+                    // Add the bin to the HTML
+                    dotPlotHtml += `
+                        <div class="flex items-center">
+                            <div class="w-32 font-medium text-gray-700 text-sm">${binLabel}</div>
+                            <div class="flex-1">${dots}</div>
+                            <div class="w-8 text-right text-gray-600">${count}</div>
+                        </div>
+                    `;
+                }
+                
+                // Close the main div
+                dotPlotHtml += `</div>`;
+                
+                // Calculate and add summary statistics
+                const totalCompletions = completionDates.length;
+                const formattedStartDate = minDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+                const formattedEndDate = maxDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+                
+                // Calculate number of active days (days with at least one completion)
+                const activeDaysSet = new Set();
+                completionDates.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+                    activeDaysSet.add(dateStr);
+                });
+                const activeDays = activeDaysSet.size;
+                
+                // Calculate average completions per active day
+                const averagePerDay = Math.round((totalCompletions / activeDays) * 10) / 10;
+                
+                // Add summary statistics to the HTML
+                dotPlotHtml += `
+                    <div class="mt-3 grid grid-cols-3 gap-2 text-center">
+                        <div class="p-2 bg-gray-50 rounded-lg">
+                            <div class="text-xl font-bold text-indigo-600">${totalCompletions}</div>
+                            <div class="text-xs text-gray-500">Total Completions</div>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded-lg">
+                            <div class="text-xl font-bold text-indigo-600">${activeDays}</div>
+                            <div class="text-xs text-gray-500">Active Days</div>
+                        </div>
+                        <div class="p-2 bg-gray-50 rounded-lg">
+                            <div class="text-xl font-bold text-indigo-600">${averagePerDay}</div>
+                            <div class="text-xs text-gray-500">Avg Per Day</div>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500 text-center">
+                        Data from ${formattedStartDate} to ${formattedEndDate}
+                    </div>
+                `;
+                
+                // Log the generated HTML length
+                console.log('DEBUG (DotPlot): Generated dotPlotHtml. Length:', dotPlotHtml ? dotPlotHtml.length : 'null');
+                
+                // Assign the HTML to the container
+                container.innerHTML = dotPlotHtml;
+                
+                console.log("DEBUG (DotPlot): Assigned HTML to container.");
             } catch (err) {
                 console.log('DEBUG (DotPlot): Caught error during processing/rendering.');
                 container.innerHTML = `
