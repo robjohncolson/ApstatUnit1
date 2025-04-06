@@ -1722,13 +1722,31 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 console.log(`DEBUG: Today's completions: ${videosToday} videos, ${quizzesToday} quizzes.`);
                 console.log(`DEBUG: Required: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes.`);
                 
-                // Check if quota is met
-                if (videosToday >= requiredVideosPerDay && quizzesToday >= requiredQuizzesPerDay) {
-                    console.log('DEBUG (QuotaCheck): Flexible quota MET. Preparing to log to DB.'); // Log BEFORE insert attempt
+                // Start a new try...catch block for querying and potentially modifying daily_quotas_met
+                try {
+                    // Query Existing Status
+                    const quotaStatusResult = await supabaseClient
+                        .from('daily_quotas_met')
+                        .select('id')
+                        .eq('user_id', currentUserId)
+                        .eq('quota_date', todayDateString)
+                        .maybeSingle();
                     
-                    // Record in Supabase daily_quotas_met table
-                    try { // Add try-catch specifically around the insert
-                        console.log(`DEBUG (QuotaCheck): Attempting INSERT into daily_quotas_met: user_id=${currentUserId}, quota_date=${todayDateString}`);
+                    if (quotaStatusResult.error) {
+                        console.error('Error checking quota status:', quotaStatusResult.error);
+                        return;
+                    }
+                    
+                    const recordExists = quotaStatusResult.data !== null;
+                    console.log(`DEBUG: Record exists for today? ${recordExists}`);
+                    
+                    // Check if Quota is Met Now
+                    const quotaMetNow = videosToday >= requiredVideosPerDay && quizzesToday >= requiredQuizzesPerDay;
+                    console.log(`DEBUG: Quota met now? ${quotaMetNow}`);
+                    
+                    // Implement Logic
+                    if (quotaMetNow && !recordExists) {
+                        console.log("Attempting to INSERT quota record...");
                         const { data: insertData, error: insertError } = await supabaseClient
                             .from('daily_quotas_met')
                             .insert({
@@ -1736,28 +1754,35 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                                 quota_date: todayDateString
                             });
                         
-                        console.log('DEBUG (QuotaCheck): Insert response:', { insertData, insertError }); // Log the full response
-                        
                         if (!insertError) {
-                            console.log("DEBUG (QuotaCheck): Entered 'if (!insertError)' block.");
-                            console.log('DEBUG (QuotaCheck): Daily flexible quota met and logged successfully.');
+                            console.log('Daily flexible quota met and logged successfully.');
                             displayDailyQuotaStatus(); // Re-run the display function after successful logging
                         } else if (insertError.code === '23505') {
-                            console.log("DEBUG (QuotaCheck): Entered 'else if (insertError.code === '23505')' block.");
-                            console.log('DEBUG (QuotaCheck): Quota already logged for today (Unique constraint violation).');
+                            console.log('Quota already logged for today (Unique constraint violation).');
                         } else {
-                            console.log("DEBUG (QuotaCheck): Entered final 'else' block for other insert errors.");
-                            console.error('DEBUG (QuotaCheck): Error logging quota completion:', insertError);
+                            console.error('Error logging quota completion:', insertError);
                         }
-                    } catch(catchInsertError) {
-                        console.log("DEBUG (QuotaCheck): Entered OUTER CATCH block.");
-                        console.error('DEBUG (QuotaCheck): CATCH block during insert attempt:', catchInsertError);
+                    } else if (!quotaMetNow && recordExists) {
+                        console.log("Attempting to DELETE quota record...");
+                        const { data: deleteData, error: deleteError } = await supabaseClient
+                            .from('daily_quotas_met')
+                            .delete()
+                            .eq('user_id', currentUserId)
+                            .eq('quota_date', todayDateString);
+                        
+                        if (!deleteError) {
+                            console.log('Daily quota record deleted successfully.');
+                            displayDailyQuotaStatus(); // Re-run the display function after successful deletion
+                        } else {
+                            console.error('Error deleting quota record:', deleteError);
+                        }
+                    } else {
+                        console.log("No change needed for quota status.");
                     }
-                } else {
-                    console.log('DEBUG (QuotaCheck): Flexible quota NOT met.');
+                } catch (quotaError) {
+                    console.error('Error during quota status management:', quotaError);
                 }
             } catch (error) {
-                console.log("DEBUG (QuotaCheck): Entered OUTER CATCH block.");
                 console.error('Error during quota check process:', error);
             }
         }
