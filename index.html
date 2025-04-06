@@ -287,7 +287,37 @@
                 localStorage.removeItem('apStatsUserId');
             }
             
-            // Step 3: If we have username but no userId, look up or create in database
+            // Step 3: Validate Existing User ID (if present)
+            if (currentUsername && currentUserId) {
+                try {
+                    // Check if the user ID exists in the database
+                    const { data: userCheck, error: checkError } = await supabaseClient
+                        .from('users')
+                        .select('id')
+                        .eq('id', currentUserId)
+                        .maybeSingle();
+                    
+                    if (checkError) {
+                        throw checkError;
+                    }
+                    
+                    if (!userCheck) {
+                        // User ID not found in database
+                        console.warn('User ID found in localStorage but not in DB. Attempting to recreate user.');
+                        currentUserId = null; // Force recreation logic below
+                        localStorage.removeItem('apStatsUserId'); // Remove the bad ID from storage
+                    } else {
+                        // User ID verified in database
+                        console.log(`User ID ${currentUserId} verified in DB for ${currentUsername}`);
+                    }
+                } catch (error) {
+                    console.error('Error validating user ID in DB:', error);
+                    currentUserId = null; // Set to null to be safe
+                    localStorage.removeItem('apStatsUserId');
+                }
+            }
+            
+            // Step 4: Look up/Create User (if needed)
             if (currentUsername && !currentUserId) {
                 try {
                     // Try to find existing user
@@ -554,8 +584,7 @@
                                                         item_type: 'video',
                                                         item_identifier: videoUrl,
                                                         unit_id: unit.unitId,
-                                                        completed_at: video.completionDate || new Date().toISOString(),
-                                                        queueTimestamp: Date.now() // Add timestamp for queue tracking
+                                                        completed_at: video.completionDate || new Date().toISOString()
                                                     };
                                                     
                                                     itemsToUploadCount++;
@@ -600,8 +629,7 @@
                                                         item_type: 'quiz',
                                                         item_identifier: quiz.quizId,
                                                         unit_id: unit.unitId,
-                                                        completed_at: quiz.completionDate || new Date().toISOString(),
-                                                        queueTimestamp: Date.now() // Add timestamp for queue tracking
+                                                        completed_at: quiz.completionDate || new Date().toISOString()
                                                     };
                                                     
                                                     itemsToUploadCount++;
