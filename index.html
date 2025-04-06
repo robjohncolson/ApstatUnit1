@@ -2382,13 +2382,13 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             const targetEl = document.getElementById('remaining-items');
             
             // Check if ALL_UNITS_DATA exists
-            if (!window.ALL_UNITS_DATA || !Array.isArray(window.ALL_UNITS_DATA)) {
+            if (typeof ALL_UNITS_DATA === 'undefined' || !Array.isArray(ALL_UNITS_DATA)) {
                 targetEl.innerHTML = `<div class="text-red-500">Error: Course data not loaded properly. Please refresh the page.</div>`;
                 return;
             }
             
             // Get total counts using the function from allUnitsData.js
-            const { totalVideos, totalQuizzes } = getTotalItemCounts(window.ALL_UNITS_DATA);
+            const { totalVideos, totalQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
             
             // Display the information
             targetEl.innerHTML = `
@@ -2402,13 +2402,13 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             const targetEl = document.getElementById('flexible-quota');
             
             // Check if ALL_UNITS_DATA exists
-            if (!window.ALL_UNITS_DATA || !Array.isArray(window.ALL_UNITS_DATA)) {
+            if (typeof ALL_UNITS_DATA === 'undefined' || !Array.isArray(ALL_UNITS_DATA)) {
                 targetEl.innerHTML = `<div class="text-red-500">Error: Course data not loaded properly. Please refresh the page.</div>`;
                 return;
             }
             
             // Get total counts using the function from allUnitsData.js
-            const { totalVideos, totalQuizzes } = getTotalItemCounts(window.ALL_UNITS_DATA);
+            const { totalVideos, totalQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
             
             // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
             const today = new Date();
