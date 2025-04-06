@@ -1688,13 +1688,16 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             
             console.log(`DEBUG (QuotaCheck): Calculated targets: Videos=${requiredVideosPerDay}, Quizzes=${requiredQuizzesPerDay}`);
             
-            // Get today's date boundaries
+            // Get today's date boundaries using UTC
             const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
-            const todayDateString = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+            // Get start of CURRENT UTC day
+            const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+            // Get end of CURRENT UTC day
+            const endOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+            // Format date string as YYYY-MM-DD based on UTC date
+            const todayDateString = startOfDayUTC.toISOString().split('T')[0];
             
-            console.log(`DEBUG: Checking completions for ${todayDateString} from ${startOfDay} to ${endOfDay}`);
+            console.log(`DEBUG: Checking completions for UTC date ${todayDateString} from ${startOfDayUTC.toISOString()} to ${endOfDayUTC.toISOString()}`);
             
             try {
                 // Query Supabase for today's completions
@@ -1702,8 +1705,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     .from('completions')
                     .select('item_type')
                     .eq('user_id', currentUserId)
-                    .gte('completed_at', startOfDay)
-                    .lte('completed_at', endOfDay);
+                    .gte('completed_at', startOfDayUTC.toISOString())
+                    .lte('completed_at', endOfDayUTC.toISOString());
                 
                 if (error) {
                     console.error('Error fetching today\'s completions:', error);
@@ -1725,7 +1728,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     
                     // Record in Supabase daily_quotas_met table
                     try { // Add try-catch specifically around the insert
-                        console.log('DEBUG (QuotaCheck): Attempting INSERT into daily_quotas_met...');
+                        console.log(`DEBUG (QuotaCheck): Attempting INSERT into daily_quotas_met: user_id=${currentUserId}, quota_date=${todayDateString}`);
                         const { data: insertData, error: insertError } = await supabaseClient
                             .from('daily_quotas_met')
                             .insert({
@@ -1736,21 +1739,25 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                         console.log('DEBUG (QuotaCheck): Insert response:', { insertData, insertError }); // Log the full response
                         
                         if (!insertError) {
+                            console.log("DEBUG (QuotaCheck): Entered 'if (!insertError)' block.");
                             console.log('DEBUG (QuotaCheck): Daily flexible quota met and logged successfully.');
-                            // Maybe trigger a refresh of the quota status display?
-                            // displayDailyQuotaStatus(); // Re-run the display function after successful logging
+                            displayDailyQuotaStatus(); // Re-run the display function after successful logging
                         } else if (insertError.code === '23505') {
+                            console.log("DEBUG (QuotaCheck): Entered 'else if (insertError.code === '23505')' block.");
                             console.log('DEBUG (QuotaCheck): Quota already logged for today (Unique constraint violation).');
                         } else {
+                            console.log("DEBUG (QuotaCheck): Entered final 'else' block for other insert errors.");
                             console.error('DEBUG (QuotaCheck): Error logging quota completion:', insertError);
                         }
                     } catch(catchInsertError) {
+                        console.log("DEBUG (QuotaCheck): Entered OUTER CATCH block.");
                         console.error('DEBUG (QuotaCheck): CATCH block during insert attempt:', catchInsertError);
                     }
                 } else {
                     console.log('DEBUG (QuotaCheck): Flexible quota NOT met.');
                 }
             } catch (error) {
+                console.log("DEBUG (QuotaCheck): Entered OUTER CATCH block.");
                 console.error('Error during quota check process:', error);
             }
         }
@@ -3157,6 +3164,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
         // Function to display daily quota status from Supabase
         async function displayDailyQuotaStatus() {
             const container = document.getElementById('todays-quota-status');
+            console.log(`DEBUG (QuotaDisplay - Entry): Function called. currentUserId is: ${currentUserId} (Type: ${typeof currentUserId})`);
             
             // Check if currentUserId exists
             if (!currentUserId) {
@@ -3201,9 +3209,13 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 }
                 
                 // Fetch Today's Completions
-                const today = new Date();
-                const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-                const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+                const now = new Date();
+                // Get start of CURRENT UTC day
+                const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+                // Get end of CURRENT UTC day
+                const endOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
+                // Format date string using UTC date
+                const todayDateString = startOfDayUTC.toISOString().split('T')[0];
                 
                 let videosToday = 0;
                 let quizzesToday = 0;
@@ -3213,8 +3225,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                         .from('completions')
                         .select('item_type')
                         .eq('user_id', currentUserId)
-                        .gte('completed_at', startOfDay)
-                        .lte('completed_at', endOfDay);
+                        .gte('completed_at', startOfDayUTC.toISOString())
+                        .lte('completed_at', endOfDayUTC.toISOString());
                     
                     if (error) {
                         throw new Error(`Error fetching today's completions: ${error.message}`);
@@ -3230,17 +3242,16 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 }
                 
                 // Fetch Quota Met Status
-                const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
                 let isQuotaMetToday = false;
                 
                 try {
                     console.log(`DEBUG (QuotaDisplay - Query Params): Checking status for user_id = ${currentUserId} (Type: ${typeof currentUserId})`);
-                    console.log(`DEBUG (QuotaDisplay - Query Params): Checking status for quota_date = ${dateStr} (Type: ${typeof dateStr})`);
+                    console.log(`DEBUG (QuotaDisplay - Query Params): Checking status for quota_date = ${todayDateString} (Type: ${typeof todayDateString})`);
                     const quotaStatusResult = await supabaseClient
                         .from('daily_quotas_met')
                         .select('id')
                         .eq('user_id', currentUserId)
-                        .eq('quota_date', dateStr)
+                        .eq('quota_date', todayDateString)
                         .maybeSingle();
                     
                     console.log(`DEBUG (QuotaDisplay): Query Result - Data:`, quotaStatusResult.data);
