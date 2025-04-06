@@ -267,7 +267,7 @@
         async function identifyUser() {
             // Step 1: Get values from localStorage
             currentUsername = localStorage.getItem('apStatsUsername');
-            currentUserId = localStorage.getItem('apStatsUserId');
+            currentUserId = parseInt(localStorage.getItem('apStatsUserId'), 10) || null;
             
             // Step 2: Check if username is null or empty
             if (!currentUsername) {
@@ -1686,6 +1686,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 // Continue with default values
             }
             
+            console.log(`DEBUG (QuotaCheck): Calculated targets: Videos=${requiredVideosPerDay}, Quizzes=${requiredQuizzesPerDay}`);
+            
             // Get today's date boundaries
             const now = new Date();
             const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
@@ -1712,35 +1714,41 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 const videosToday = data ? data.filter(item => item.item_type === 'video').length : 0;
                 const quizzesToday = data ? data.filter(item => item.item_type === 'quiz').length : 0;
                 
+                console.log(`DEBUG (QuotaCheck): Fetched counts for today: Videos=${videosToday}, Quizzes=${quizzesToday}`);
+                
                 console.log(`DEBUG: Today's completions: ${videosToday} videos, ${quizzesToday} quizzes.`);
                 console.log(`DEBUG: Required: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes.`);
                 
                 // Check if quota is met
                 if (videosToday >= requiredVideosPerDay && quizzesToday >= requiredQuizzesPerDay) {
-                    console.log('DEBUG: Daily flexible quota requirements met!');
+                    console.log('DEBUG (QuotaCheck): Flexible quota MET. Preparing to log to DB.'); // Log BEFORE insert attempt
                     
                     // Record in Supabase daily_quotas_met table
-                    const { error: insertError } = await supabaseClient
-                        .from('daily_quotas_met')
-                        .insert({
-                            user_id: currentUserId,
-                            quota_date: todayDateString
-                        });
-                    
-                    if (!insertError) {
-                        console.log('DEBUG: Daily flexible quota met and logged.');
+                    try { // Add try-catch specifically around the insert
+                        console.log('DEBUG (QuotaCheck): Attempting INSERT into daily_quotas_met...');
+                        const { data: insertData, error: insertError } = await supabaseClient
+                            .from('daily_quotas_met')
+                            .insert({
+                                user_id: currentUserId,
+                                quota_date: todayDateString
+                            });
                         
-                        // Optional: Add a subtle notification here
-                        // For example, briefly show a success message or update an icon
+                        console.log('DEBUG (QuotaCheck): Insert response:', { insertData, insertError }); // Log the full response
                         
-                    } else if (insertError.code === '23505') {
-                        // This is a unique violation error (quota already logged for today)
-                        console.log('DEBUG: Quota already logged for today.');
-                    } else {
-                        console.error('Error logging quota completion:', insertError);
+                        if (!insertError) {
+                            console.log('DEBUG (QuotaCheck): Daily flexible quota met and logged successfully.');
+                            // Maybe trigger a refresh of the quota status display?
+                            // displayDailyQuotaStatus(); // Re-run the display function after successful logging
+                        } else if (insertError.code === '23505') {
+                            console.log('DEBUG (QuotaCheck): Quota already logged for today (Unique constraint violation).');
+                        } else {
+                            console.error('DEBUG (QuotaCheck): Error logging quota completion:', insertError);
+                        }
+                    } catch(catchInsertError) {
+                        console.error('DEBUG (QuotaCheck): CATCH block during insert attempt:', catchInsertError);
                     }
                 } else {
-                    console.log('DEBUG: Daily quota not yet met.');
+                    console.log('DEBUG (QuotaCheck): Flexible quota NOT met.');
                 }
             } catch (error) {
                 console.error('Error during quota check process:', error);
@@ -3226,12 +3234,25 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 let isQuotaMetToday = false;
                 
                 try {
+                    console.log(`DEBUG (QuotaDisplay - Query Params): Checking status for user_id = ${currentUserId} (Type: ${typeof currentUserId})`);
+                    console.log(`DEBUG (QuotaDisplay - Query Params): Checking status for quota_date = ${dateStr} (Type: ${typeof dateStr})`);
                     const quotaStatusResult = await supabaseClient
                         .from('daily_quotas_met')
                         .select('id')
                         .eq('user_id', currentUserId)
                         .eq('quota_date', dateStr)
                         .maybeSingle();
+                    
+                    console.log(`DEBUG (QuotaDisplay): Query Result - Data:`, quotaStatusResult.data);
+                    console.log(`DEBUG (QuotaDisplay): Query Result - Error:`, quotaStatusResult.error);
+                    // Explicitly check the condition used to determine 'Met' status
+                    if (quotaStatusResult.data) {
+                        console.log(`DEBUG (QuotaDisplay): Condition 'if (data)' evaluated to TRUE.`);
+                    } else {
+                        console.log(`DEBUG (QuotaDisplay): Condition 'if (data)' evaluated to FALSE.`);
+                    }
+                    
+                    console.log('DEBUG (QuotaDisplay): Result from daily_quotas_met query:', quotaStatusResult);
                     
                     if (quotaStatusResult.error) {
                         throw new Error(`Error fetching quota status: ${quotaStatusResult.error.message}`);
