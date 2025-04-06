@@ -1632,6 +1632,11 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                         updateCurrentTopicInfo();
                         populateQuickAccessTopics();
                     }
+                    
+                    // Call displayOverallProgress if overall progress tab
+                    if (button.id === 'tab-overall-progress') {
+                        displayOverallProgress();
+                    }
                 });
             });
             
@@ -1782,6 +1787,11 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 loadTopicProgress();
                 updateCurrentTopicInfo();
                 populateQuickAccessTopics();
+            }
+            
+            // Initialize overall progress tab if that tab is initially selected
+            if (document.getElementById('tab-overall-progress').classList.contains('active')) {
+                displayOverallProgress();
             }
         });
         
