@@ -3369,7 +3369,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 // Video Progress Bar
                 const videoPercent = requiredVideosPerDay > 0
                     ? Math.min(100, (videosToday / requiredVideosPerDay) * 100)
-                    : (completedVideos > 0 && totalVideos > 0 ? 100 : 0); // Handle 0 target: 100% if any done & course not empty, else 0
+                    : (videosToday > 0 ? 100 : 0); // Handle 0 target: 100% if any done today, else 0
 
 
                 statusHtml += `
@@ -3387,7 +3387,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 // Quiz Progress Bar
                 const quizPercent = requiredQuizzesPerDay > 0
                     ? Math.min(100, (quizzesToday / requiredQuizzesPerDay) * 100)
-                    : (completedQuizzes > 0 && totalQuizzes > 0 ? 100 : 0); // Handle 0 target: 100% if any done & course not empty, else 0
+                    : (quizzesToday > 0 ? 100 : 0); // Handle 0 target: 100% if any done today, else 0
 
 
                 statusHtml += `
