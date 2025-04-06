@@ -2605,6 +2605,96 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 
                 console.log('DEBUG (DotPlot): Date Range:', minDate, 'to', maxDate);
                 
+                // Define constants for time durations in milliseconds
+                const MSEC_PER_HOUR = 60 * 60 * 1000;
+                const MSEC_PER_DAY = 24 * MSEC_PER_HOUR;
+                const MSEC_PER_WEEK = 7 * MSEC_PER_DAY;
+                const MSEC_PER_MONTH = 30 * MSEC_PER_DAY; // Approximation
+                
+                // Calculate the total duration
+                const totalDuration = maxDate.getTime() - minDate.getTime();
+                
+                // Determine time unit and bin duration based on total duration
+                let timeUnit = 'days';
+                let binDurationMillis = MSEC_PER_DAY;
+                
+                if (totalDuration <= MSEC_PER_HOUR) {
+                    // Special case for very small duration (≤ 1 hour)
+                    // Create 5 x 1-hour bins centered around the activity
+                    timeUnit = 'hours';
+                    binDurationMillis = MSEC_PER_HOUR;
+                    // Adjust minDate to 2 hours before the midpoint
+                    const midPoint = (minDate.getTime() + maxDate.getTime()) / 2;
+                    minDate.setTime(midPoint - 2 * MSEC_PER_HOUR);
+                    // Adjust maxDate to 3 hours after the beginning (which is 5 hours total)
+                    maxDate.setTime(minDate.getTime() + 5 * MSEC_PER_HOUR);
+                } else if (totalDuration <= 12 * MSEC_PER_HOUR) {
+                    timeUnit = 'hours';
+                    binDurationMillis = Math.max(MSEC_PER_HOUR, totalDuration / 5);
+                } else if (totalDuration <= 10 * MSEC_PER_DAY) {
+                    timeUnit = 'days';
+                    binDurationMillis = Math.max(MSEC_PER_DAY, totalDuration / 5);
+                } else if (totalDuration <= 10 * MSEC_PER_WEEK) {
+                    timeUnit = 'weeks';
+                    binDurationMillis = Math.max(MSEC_PER_WEEK, totalDuration / 5);
+                } else {
+                    timeUnit = 'months';
+                    binDurationMillis = Math.max(MSEC_PER_MONTH, totalDuration / 5);
+                }
+                
+                // Log the chosen unit and duration
+                if (timeUnit === 'hours') {
+                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${binDurationMillis / MSEC_PER_HOUR} ${timeUnit}`);
+                } else if (timeUnit === 'days') {
+                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${binDurationMillis / MSEC_PER_DAY} ${timeUnit}`);
+                } else if (timeUnit === 'weeks') {
+                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${binDurationMillis / MSEC_PER_WEEK} ${timeUnit}`);
+                } else {
+                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${binDurationMillis / MSEC_PER_MONTH} ${timeUnit}`);
+                }
+                
+                // Define bin boundaries
+                let binStart = minDate.getTime();
+                const binBoundaries = [];
+                const binCounts = [0, 0, 0, 0, 0];
+                
+                // Create 5 equally-sized bins
+                for (let i = 0; i < 5; i++) {
+                    const currentBinEnd = binStart + binDurationMillis;
+                    binBoundaries.push({ start: binStart, end: currentBinEnd });
+                    binStart = currentBinEnd;
+                }
+                
+                // Ensure the last bin includes the maxDate
+                if (binBoundaries[4].end < maxDate.getTime()) {
+                    binBoundaries[4].end = maxDate.getTime();
+                }
+                
+                console.log('DEBUG (DotPlot): Bin Boundaries:', binBoundaries);
+                
+                // Assign completions to bins
+                completionDates.forEach(date => {
+                    const time = date.getTime();
+                    
+                    // Find which bin this completion falls into
+                    for (let j = 0; j < 5; j++) {
+                        const { start, end } = binBoundaries[j];
+                        
+                        // Special case for the last bin to include the exact end time
+                        if (j === 4 && time >= start && time <= end) {
+                            binCounts[j]++;
+                            break;
+                        }
+                        // Normal case: start is inclusive, end is exclusive
+                        else if (time >= start && time < end) {
+                            binCounts[j]++;
+                            break;
+                        }
+                    }
+                });
+                
+                console.log('DEBUG (DotPlot): Bin Counts:', binCounts);
+                
             } catch (err) {
                 console.log('DEBUG (DotPlot): Caught error during processing/rendering.');
                 container.innerHTML = `
