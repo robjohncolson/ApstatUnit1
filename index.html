@@ -440,6 +440,37 @@
             console.log('DEBUG: >>> Exiting saveCompletionToSupabase.');
         }
         
+        // Function to delete completion data from Supabase
+        async function deleteCompletionFromSupabase(itemType, itemIdentifier, unitId) {
+            // Re-verify User ID inside the function
+            if (!currentUserId) {
+                console.warn('DEBUG: No user ID found. Skipping Supabase deletion.');
+                return; // Exit if no user ID
+            }
+            
+            console.log(`DEBUG: Attempting to DELETE completion: User=${currentUserId}, Type=${itemType}, ID=${itemIdentifier}, Unit=${unitId}`);
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('completions')
+                    .delete()
+                    .match({ 
+                        user_id: currentUserId, 
+                        item_type: itemType, 
+                        item_identifier: itemIdentifier, 
+                        unit_id: unitId 
+                    });
+                
+                if (error) {
+                    console.error('DEBUG: Error deleting completion:', error);
+                } else {
+                    console.log('DEBUG: Successfully deleted completion from Supabase.');
+                }
+            } catch (error) {
+                console.error('DEBUG: Exception while deleting completion from Supabase:', error);
+            }
+        }
+        
         // Function to synchronize offline completion queue with Supabase
         async function syncOfflineQueue() {
             // Only run if we have a user ID and the browser thinks it's online
@@ -1229,7 +1260,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                             </svg>
                         </span>
-                                    <span class="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-gray-200 rounded p-2 shadow-md text-xs text-gray-700 w-48 z-50">
+                            <span class="absolute top-full left-0 mt-1 hidden group-hover:block bg-white border border-gray-200 rounded p-2 shadow-md text-xs text-gray-700 w-48 z-50">
                                         If AP Classroom is down, <a href="${video.altUrl}" class="text-blue-600 hover:text-blue-800">click here</a> for the backup Google Drive video.
                         </span>
                         ` : ''}
@@ -1561,10 +1592,16 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             populateQuickAccessTopics();
             updateProgressBar();
             
-            console.log(`DEBUG: Before Supabase Check. currentUserId:`, currentUserId);
+            console.log(`DEBUG: Before Supabase Check. currentUserId:`, currentUserId, `isCompleted:`, isCompleted); // Updated log
             if (currentUserId) {
-                // If a user is identified, save completion to Supabase
-                saveCompletionToSupabase('video', videoUrl, '1');
+                if (isCompleted) { // ADD THIS CHECK
+                    console.log('DEBUG: Item marked complete, attempting to save to Supabase...');
+                    saveCompletionToSupabase('video', videoUrl, UNIT_ID); // Pass correct itemType/identifier
+                } else {
+                    // Item marked incomplete - Call delete function
+                    console.log('DEBUG: Item marked incomplete. Attempting to delete from Supabase...');
+                    deleteCompletionFromSupabase('video', videoUrl, UNIT_ID);
+                }
             }
             
             // Call placeholder function for checking local storage quota
@@ -1594,10 +1631,16 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             populateQuickAccessTopics();
             updateProgressBar();
             
-            console.log(`DEBUG: Before Supabase Check. currentUserId:`, currentUserId);
+            console.log(`DEBUG: Before Supabase Check. currentUserId:`, currentUserId, `isCompleted:`, isCompleted); // Updated log
             if (currentUserId) {
-                // If a user is identified, save completion to Supabase
-                saveCompletionToSupabase('quiz', quizId, '1');
+                if (isCompleted) { // ADD THIS CHECK
+                    console.log('DEBUG: Item marked complete, attempting to save to Supabase...');
+                    saveCompletionToSupabase('quiz', quizId, UNIT_ID); // Pass correct itemType/identifier
+                } else {
+                    // Item marked incomplete - Call delete function
+                    console.log('DEBUG: Item marked incomplete. Attempting to delete from Supabase...');
+                    deleteCompletionFromSupabase('quiz', quizId, UNIT_ID);
+                }
             }
             
             // Call placeholder function for checking local storage quota
