@@ -2305,6 +2305,17 @@ Thank you for helping me prepare for my AP Statistics exam!`;
         window.markVideoComplete = markVideoComplete;
         window.markQuizComplete = markQuizComplete;
         window.handleItemCompletionChange = handleItemCompletionChange;
+        
+        // Listen for browser coming back online
+        window.addEventListener('online', function() {
+            console.log("Browser detected online status.");
+            
+            if (currentUserId) {
+                syncOfflineQueue();
+            } else {
+                console.log("User not identified, cannot sync yet.");
+            }
+        });
     </script>
     
     <!-- React Component -->
@@ -2458,6 +2469,17 @@ Thank you for helping me prepare for my AP Statistics exam!`;
 
         // Render React component
         ReactDOM.render(<APStatLearningFlow />, document.getElementById('learning-flow-app'));
+        
+        // Listen for browser coming back online
+        window.addEventListener('online', function() {
+            console.log("Browser detected online status.");
+            
+            if (currentUserId) {
+                syncOfflineQueue();
+            } else {
+                console.log("User not identified, cannot sync yet.");
+            }
+        });
     </script>
 </body>
 </html> 
