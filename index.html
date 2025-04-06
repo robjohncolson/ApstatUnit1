@@ -2587,85 +2587,23 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 
                 console.log('DEBUG (DotPlot): Proceeding to process fetched data...');
                 
-                // Group completions by date
-                const dateGroups = {};
+                // Convert all valid completed_at strings to Date objects
+                const completionDates = data.map(item => new Date(item.completed_at)).filter(date => !isNaN(date));
                 
-                data.forEach(item => {
-                    if (!item.completed_at) return;
-                    
-                    // Format date as YYYY-MM-DD
-                    const date = new Date(item.completed_at);
-                    const dateStr = date.toISOString().split('T')[0];
-                    
-                    // Count completions per date
-                    if (dateGroups[dateStr]) {
-                        dateGroups[dateStr]++;
-                    } else {
-                        dateGroups[dateStr] = 1;
-                    }
-                });
-                
-                // Render dot plot visualization
-                const dateKeys = Object.keys(dateGroups).sort();
-                
-                let dotPlotHtml = `
-                    <h3 class="text-lg font-semibold mb-3 text-indigo-800">Overall Completions Logged Online</h3>
-                    <div class="mt-2 mb-4 text-sm text-gray-500">Each dot represents one completed item</div>
-                    <div class="space-y-2 max-h-60 overflow-y-auto p-2 bg-gray-50 rounded-lg">
-                `;
-                
-                dateKeys.forEach(dateStr => {
-                    const count = dateGroups[dateStr];
-                    const formattedDate = new Date(dateStr).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric',
-                        year: 'numeric'
-                    });
-                    
-                    // Create dots based on completion count
-                    let dots = '';
-                    for (let i = 0; i < count; i++) {
-                        dots += `<span class="inline-block w-3 h-3 bg-indigo-500 rounded-full mx-1"></span>`;
-                    }
-                    
-                    dotPlotHtml += `
-                        <div class="flex items-center">
-                            <div class="w-24 font-medium text-gray-700">${formattedDate}</div>
-                            <div class="flex-1">${dots}</div>
-                            <div class="w-8 text-right text-gray-600">${count}</div>
+                if (completionDates.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p class="text-blue-700">No valid completion dates found.</p>
                         </div>
                     `;
-                });
+                    return;
+                }
                 
-                dotPlotHtml += `</div>`;
+                // Find the minimum and maximum dates
+                const minDate = new Date(Math.min(...completionDates));
+                const maxDate = new Date(Math.max(...completionDates));
                 
-                // Add summary statistics
-                const totalCompletions = data.length;
-                const uniqueDates = dateKeys.length;
-                const averagePerDay = Math.round((totalCompletions / uniqueDates) * 10) / 10;
-                
-                dotPlotHtml += `
-                    <div class="mt-3 grid grid-cols-3 gap-2 text-center">
-                        <div class="p-2 bg-gray-50 rounded-lg">
-                            <div class="text-xl font-bold text-indigo-600">${totalCompletions}</div>
-                            <div class="text-xs text-gray-500">Total Completions</div>
-                        </div>
-                        <div class="p-2 bg-gray-50 rounded-lg">
-                            <div class="text-xl font-bold text-indigo-600">${uniqueDates}</div>
-                            <div class="text-xs text-gray-500">Active Days</div>
-                        </div>
-                        <div class="p-2 bg-gray-50 rounded-lg">
-                            <div class="text-xl font-bold text-indigo-600">${averagePerDay}</div>
-                            <div class="text-xs text-gray-500">Avg Per Day</div>
-                        </div>
-                    </div>
-                `;
-                
-                console.log('DEBUG (DotPlot): Generated dotPlotHtml. Length:', dotPlotHtml ? dotPlotHtml.length : 'null');
-                // Optional: Log the first 500 chars if you suspect HTML issues
-                // console.log('DEBUG (DotPlot): dotPlotHtml start:', dotPlotHtml ? dotPlotHtml.substring(0, 500) : 'null');
-                
-                container.innerHTML = dotPlotHtml;
+                console.log('DEBUG (DotPlot): Date Range:', minDate, 'to', maxDate);
                 
             } catch (err) {
                 console.log('DEBUG (DotPlot): Caught error during processing/rendering.');
