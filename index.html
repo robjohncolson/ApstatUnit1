@@ -467,6 +467,189 @@
             console.log(`DEBUG: Offline queue sync complete. ${successfullySyncedTimestamps.length} items synced. ${newQueue.length} items remain.`);
         }
         
+        // Function to synchronize local storage progress with Supabase
+        async function syncLocalStorageToSupabase() {
+            // Initial checks
+            if (!currentUserId) {
+                console.log("DEBUG (LSSync): No user ID available. Skipping sync.");
+                return;
+            }
+            
+            if (!navigator.onLine) {
+                console.log("DEBUG (LSSync): Browser reports offline. Skipping sync.");
+                return;
+            }
+            
+            if (typeof ALL_UNITS_DATA === 'undefined') {
+                console.log("DEBUG (LSSync): ALL_UNITS_DATA not available. Skipping sync.");
+                return;
+            }
+            
+            console.log("DEBUG (LSSync): Starting sync from Local Storage to Supabase...");
+            
+            try {
+                // Fetch existing completions from Supabase
+                console.log("DEBUG (LSSync): Fetching existing completions from Supabase...");
+                const { data, error } = await supabaseClient
+                    .from('completions')
+                    .select('unit_id, item_identifier, item_type')
+                    .eq('user_id', currentUserId);
+                
+                if (error) {
+                    console.error("DEBUG (LSSync): Error fetching completions from Supabase:", error);
+                    return;
+                }
+                
+                // Create a Set of existing completion identifiers
+                const supabaseCompletionsSet = new Set();
+                if (data && Array.isArray(data)) {
+                    data.forEach(item => {
+                        const uniqueId = `${item.unit_id}_${item.item_type}_${item.item_identifier}`;
+                        supabaseCompletionsSet.add(uniqueId);
+                    });
+                }
+                
+                console.log(`DEBUG (LSSync): Found ${supabaseCompletionsSet.size} existing completions in Supabase.`);
+                
+                // Initialize counters
+                let itemsToUploadCount = 0;
+                let itemsSkippedCount = 0;
+                let itemsFailedCount = 0;
+                
+                // Iterate through all units
+                for (const unit of ALL_UNITS_DATA) {
+                    // Construct the localStorage key for this unit
+                    const unitNumber = unit.unitId.slice(-1); // Extract the number at the end of unitId
+                    const localKey = 'apStatsUnit' + unitNumber + 'Progress';
+                    
+                    console.log(`DEBUG (LSSync): Checking local storage for unit ${unit.unitId} with key ${localKey}`);
+                    
+                    // Try to get data from localStorage
+                    const localDataString = localStorage.getItem(localKey);
+                    
+                    if (localDataString) {
+                        try {
+                            // Parse the local data
+                            const localUnitProgress = JSON.parse(localDataString);
+                            
+                            if (Array.isArray(localUnitProgress)) {
+                                console.log(`DEBUG (LSSync): Found ${localUnitProgress.length} topics in local storage for unit ${unit.unitId}`);
+                                
+                                // Loop through each topic
+                                for (const topicProgress of localUnitProgress) {
+                                    // Check videos
+                                    if (topicProgress.videos && Array.isArray(topicProgress.videos)) {
+                                        for (const video of topicProgress.videos) {
+                                            if (video.completed === true) {
+                                                // Use primary URL if available, otherwise use alternate
+                                                const videoUrl = video.url || video.altUrl;
+                                                const uniqueId = `${unit.unitId}_video_${videoUrl}`;
+                                                
+                                                if (!supabaseCompletionsSet.has(uniqueId)) {
+                                                    console.log(`DEBUG (LSSync): Found locally completed video missing in Supabase: ${uniqueId}`);
+                                                    
+                                                    // Prepare completion data
+                                                    const completionData = {
+                                                        user_id: currentUserId,
+                                                        item_type: 'video',
+                                                        item_identifier: videoUrl,
+                                                        unit_id: unit.unitId,
+                                                        completed_at: video.completionDate || new Date().toISOString(),
+                                                        queueTimestamp: Date.now() // Add timestamp for queue tracking
+                                                    };
+                                                    
+                                                    itemsToUploadCount++;
+                                                    
+                                                    try {
+                                                        // Attempt to insert into Supabase
+                                                        const { error } = await supabaseClient
+                                                            .from('completions')
+                                                            .insert(completionData);
+                                                        
+                                                        if (error) {
+                                                            console.error(`DEBUG (LSSync): Failed to upload video completion to Supabase: ${uniqueId}`, error);
+                                                            itemsFailedCount++;
+                                                        } else {
+                                                            console.log(`DEBUG (LSSync): Successfully uploaded video completion to Supabase: ${uniqueId}`);
+                                                            // Add to set to prevent duplicate attempts
+                                                            supabaseCompletionsSet.add(uniqueId);
+                                                        }
+                                                    } catch (insertError) {
+                                                        console.error(`DEBUG (LSSync): Error during video completion upload: ${uniqueId}`, insertError);
+                                                        itemsFailedCount++;
+                                                    }
+                                                } else {
+                                                    itemsSkippedCount++;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Check quizzes
+                                    if (topicProgress.quizzes && Array.isArray(topicProgress.quizzes)) {
+                                        for (const quiz of topicProgress.quizzes) {
+                                            if (quiz.completed === true) {
+                                                const uniqueId = `${unit.unitId}_quiz_${quiz.quizId}`;
+                                                
+                                                if (!supabaseCompletionsSet.has(uniqueId)) {
+                                                    console.log(`DEBUG (LSSync): Found locally completed quiz missing in Supabase: ${uniqueId}`);
+                                                    
+                                                    // Prepare completion data
+                                                    const completionData = {
+                                                        user_id: currentUserId,
+                                                        item_type: 'quiz',
+                                                        item_identifier: quiz.quizId,
+                                                        unit_id: unit.unitId,
+                                                        completed_at: quiz.completionDate || new Date().toISOString(),
+                                                        queueTimestamp: Date.now() // Add timestamp for queue tracking
+                                                    };
+                                                    
+                                                    itemsToUploadCount++;
+                                                    
+                                                    try {
+                                                        // Attempt to insert into Supabase
+                                                        const { error } = await supabaseClient
+                                                            .from('completions')
+                                                            .insert(completionData);
+                                                        
+                                                        if (error) {
+                                                            console.error(`DEBUG (LSSync): Failed to upload quiz completion to Supabase: ${uniqueId}`, error);
+                                                            itemsFailedCount++;
+                                                        } else {
+                                                            console.log(`DEBUG (LSSync): Successfully uploaded quiz completion to Supabase: ${uniqueId}`);
+                                                            // Add to set to prevent duplicate attempts
+                                                            supabaseCompletionsSet.add(uniqueId);
+                                                        }
+                                                    } catch (insertError) {
+                                                        console.error(`DEBUG (LSSync): Error during quiz completion upload: ${uniqueId}`, insertError);
+                                                        itemsFailedCount++;
+                                                    }
+                                                } else {
+                                                    itemsSkippedCount++;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                console.log(`DEBUG (LSSync): Local data for unit ${unit.unitId} is not an array. Skipping.`);
+                            }
+                        } catch (parseError) {
+                            console.error(`DEBUG (LSSync): Error parsing local data for unit ${unit.unitId}:`, parseError);
+                        }
+                    } else {
+                        console.log(`DEBUG (LSSync): No local data found for unit ${unit.unitId}`);
+                    }
+                }
+                
+                // Log summary
+                console.log(`DEBUG (LSSync): Sync finished. Items to upload check: ${itemsToUploadCount}. Items skipped (already in DB): ${itemsSkippedCount}. Items failed to upload: ${itemsFailedCount}.`);
+                
+            } catch (error) {
+                console.error("DEBUG (LSSync): Error during localStorage to Supabase sync:", error);
+            }
+        }
+        
         // Flowchart Mermaid Definition
         const flowchartDefinition = `flowchart TD
     A[Start Learning Session] --> B[Gather All Materials]
@@ -1689,6 +1872,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             // Attempt to sync offline queue if user is identified
             if (currentUserId) {
                 await syncOfflineQueue();
+                await syncLocalStorageToSupabase();
             }
             
             // Set Grok prompt content
