@@ -2376,6 +2376,104 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 document.getElementById('overall-progress-loading').style.display = 'none';
             }
         }
+        
+        // Helper function to count total videos and quizzes across all units
+        function getTotalItemCounts(unitsData) {
+            if (!unitsData || !Array.isArray(unitsData)) {
+                return { videos: 0, quizzes: 0 };
+            }
+            
+            const counts = {
+                videos: 0,
+                quizzes: 0
+            };
+            
+            // Iterate through all units
+            unitsData.forEach(unit => {
+                // If unit has topics array, count videos and quizzes
+                if (unit.topics && Array.isArray(unit.topics)) {
+                    unit.topics.forEach(topic => {
+                        // Count videos if they exist
+                        if (topic.videos && Array.isArray(topic.videos)) {
+                            counts.videos += topic.videos.length;
+                        }
+                        
+                        // Count quizzes if they exist (excluding PC quizzes which are often repeated at unit level)
+                        if (topic.pdfs && Array.isArray(topic.pdfs)) {
+                            const quizCount = topic.pdfs.filter(pdf => 
+                                pdf.type === 'quiz' && !pdf.filename.includes('pc_')
+                            ).length;
+                            counts.quizzes += quizCount;
+                        }
+                    });
+                }
+            });
+            
+            return counts;
+        }
+        
+        // Function to display total remaining item counts
+        function displayRemainingItemCounts() {
+            const targetEl = document.getElementById('remaining-items');
+            
+            // Check if ALL_UNITS_DATA exists
+            if (!window.ALL_UNITS_DATA || !Array.isArray(window.ALL_UNITS_DATA)) {
+                targetEl.innerHTML = `<div class="text-red-500">Error: Course data not loaded properly. Please refresh the page.</div>`;
+                return;
+            }
+            
+            // Get total counts
+            const { videos, quizzes } = getTotalItemCounts(window.ALL_UNITS_DATA);
+            
+            // Display the information
+            targetEl.innerHTML = `
+                <h3 class="text-lg font-semibold mb-2 text-indigo-800">Course Content Overview</h3>
+                <p>Total Items Across All Units: ${videos} videos, ${quizzes} quizzes.</p>
+            `;
+        }
+        
+        // Function to display flexible quota information based on AP exam deadline
+        function displayFlexibleQuota() {
+            const targetEl = document.getElementById('flexible-quota');
+            
+            // Check if ALL_UNITS_DATA exists
+            if (!window.ALL_UNITS_DATA || !Array.isArray(window.ALL_UNITS_DATA)) {
+                targetEl.innerHTML = `<div class="text-red-500">Error: Course data not loaded properly. Please refresh the page.</div>`;
+                return;
+            }
+            
+            // Get total counts
+            const { videos, quizzes } = getTotalItemCounts(window.ALL_UNITS_DATA);
+            
+            // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
+            const today = new Date();
+            const examDate = new Date('May 8, 2025');
+            
+            // Handle case where deadline has passed
+            if (today > examDate) {
+                targetEl.innerHTML = `
+                    <h3 class="text-lg font-semibold mb-2 text-indigo-800">Flexible Daily Goal</h3>
+                    <p>The AP Exam date (May 8th, 2025) has passed.</p>
+                `;
+                return;
+            }
+            
+            // Calculate days remaining
+            const timeDiff = examDate.getTime() - today.getTime();
+            const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            
+            // Calculate required items per day
+            const requiredVideosPerDay = Math.ceil(videos / daysRemaining);
+            const requiredQuizzesPerDay = Math.ceil(quizzes / daysRemaining);
+            
+            // Display the information
+            targetEl.innerHTML = `
+                <h3 class="text-lg font-semibold mb-2 text-indigo-800">Flexible Daily Goal</h3>
+                <p>To complete all content by the AP Exam (May 8th, 2025):</p>
+                <p class="font-medium mt-1">~${requiredVideosPerDay} videos & ~${requiredQuizzesPerDay} quizzes per day</p>
+                <p class="text-sm text-gray-500 mt-1">${daysRemaining} days remaining until the exam</p>
+            `;
+        }
     </script>
     
     <!-- React Component -->
