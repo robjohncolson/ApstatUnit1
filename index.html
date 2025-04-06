@@ -2469,7 +2469,10 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     .eq('user_id', currentUserId)
                     .order('completed_at');
                 
+                console.log('DEBUG (DotPlot): Fetched data from Supabase completions:', data);
+                
                 if (error) {
+                    console.log('DEBUG (DotPlot): Fetch returned an error.');
                     container.innerHTML = `
                         <div class="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
                             <p class="text-red-700">Error fetching completion data: ${error.message}</p>
@@ -2479,6 +2482,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 }
                 
                 if (!data || data.length === 0) {
+                    console.log('DEBUG (DotPlot): No data found or data array is empty.');
                     container.innerHTML = `
                         <div class="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <p class="text-blue-700">No completions found. Start completing topics to see your progress!</p>
@@ -2486,6 +2490,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     `;
                     return;
                 }
+                
+                console.log('DEBUG (DotPlot): Proceeding to process fetched data...');
                 
                 // Group completions by date
                 const dateGroups = {};
@@ -2561,9 +2567,14 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     </div>
                 `;
                 
+                console.log('DEBUG (DotPlot): Generated dotPlotHtml. Length:', dotPlotHtml ? dotPlotHtml.length : 'null');
+                // Optional: Log the first 500 chars if you suspect HTML issues
+                // console.log('DEBUG (DotPlot): dotPlotHtml start:', dotPlotHtml ? dotPlotHtml.substring(0, 500) : 'null');
+                
                 container.innerHTML = dotPlotHtml;
                 
             } catch (err) {
+                console.log('DEBUG (DotPlot): Caught error during processing/rendering.');
                 container.innerHTML = `
                     <div class="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
                         <p class="text-red-700">Error fetching dot plot data: ${err.message || 'Unknown error'}</p>
