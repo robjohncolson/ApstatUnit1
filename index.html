@@ -70,15 +70,6 @@
             </div>
         </header>
         
-        <!-- QR Code Section -->
-        <div class="my-4 flex flex-col items-center">
-            <div id="qrcode-container" class="p-2 bg-white border border-gray-300 rounded-lg shadow-sm inline-block">
-                <!-- QR code will be rendered here -->
-            </div>
-            <p class="text-xs text-gray-500 mt-1">Scan for page link</p>
-        </div>
-        <!-- End QR Code Section -->
-        
         <!-- Tab Navigation -->
         <div class="flex mb-0 border-b border-gray-200">
             <div id="tab-learning-flow" class="tab-button active">Learning Flow</div>
@@ -2042,8 +2033,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                      
                      new QRCode(qrCodeContainer, {
                         text: currentUrl,
-                        width: 100, // Adjust size as needed
-                        height: 100, // Adjust size as needed
+                        width: 180, // ADJUSTED SIZE
+                        height: 180, // ADJUSTED SIZE
                         colorDark : "#000000",
                         colorLight : "#ffffff",
                         correctLevel : QRCode.CorrectLevel.H // High correction level
@@ -2902,7 +2893,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
         // Function to display a dot plot visualization of completions from Supabase
         async function displaySupabaseDotPlot() {
             const container = document.getElementById('dot-plot-container');
-            
+
             // Check if user is identified
             if (!currentUserId) {
                 container.innerHTML = `
@@ -2912,34 +2903,29 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 `;
                 return;
             }
-            
+
             // Clear previous content and show loading message
             container.innerHTML = `
                 <div class="text-center p-4">
                     <p class="text-gray-500">Loading dot plot data...</p>
                 </div>
             `;
-            
+
             try {
-                // Fetch completed_at timestamps from Supabase
+                // Fetch completed_at AND item_type timestamps from Supabase
                 const { data, error } = await supabaseClient
                     .from('completions')
-                    .select('completed_at')
+                    .select('completed_at, item_type') // <-- Fetch item_type too
                     .eq('user_id', currentUserId)
                     .order('completed_at');
-                
+
                 console.log('DEBUG (DotPlot): Fetched data from Supabase completions:', data);
-                
+
                 if (error) {
                     console.log('DEBUG (DotPlot): Fetch returned an error.');
-                    container.innerHTML = `
-                        <div class="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <p class="text-red-700">Error fetching completion data: ${error.message}</p>
-                        </div>
-                    `;
-                    return;
+                    throw new Error(`Error fetching completion data: ${error.message}`);
                 }
-                
+
                 if (!data || data.length === 0) {
                     console.log('DEBUG (DotPlot): No data found or data array is empty.');
                     container.innerHTML = `
@@ -2949,49 +2935,46 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     `;
                     return;
                 }
-                
+
                 console.log('DEBUG (DotPlot): Proceeding to process fetched data...');
-                
-                // Convert all valid completed_at strings to Date objects
-                const completionDates = data.map(item => new Date(item.completed_at)).filter(date => !isNaN(date));
-                
-                if (completionDates.length === 0) {
-                    container.innerHTML = `
+
+                // Convert completion data to objects with Date and type, filter invalid dates
+                const completionItems = data
+                    .map(item => ({ date: new Date(item.completed_at), type: item.item_type }))
+                    .filter(item => !isNaN(item.date));
+
+                if (completionItems.length === 0) {
+                     container.innerHTML = `
                         <div class="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <p class="text-blue-700">No valid completion dates found.</p>
                         </div>
                     `;
                     return;
                 }
-                
-                // Find the minimum and maximum dates
-                const minDate = new Date(Math.min(...completionDates));
-                const maxDate = new Date(Math.max(...completionDates));
-                
+
+                // Find the minimum and maximum dates from valid items
+                const minDate = new Date(Math.min(...completionItems.map(item => item.date.getTime())));
+                const maxDate = new Date(Math.max(...completionItems.map(item => item.date.getTime())));
+
                 console.log('DEBUG (DotPlot): Date Range:', minDate, 'to', maxDate);
-                
+
                 // Define constants for time durations in milliseconds
                 const MSEC_PER_HOUR = 60 * 60 * 1000;
                 const MSEC_PER_DAY = 24 * MSEC_PER_HOUR;
                 const MSEC_PER_WEEK = 7 * MSEC_PER_DAY;
                 const MSEC_PER_MONTH = 30 * MSEC_PER_DAY; // Approximation
-                
+
                 // Calculate the total duration
                 const totalDuration = maxDate.getTime() - minDate.getTime();
-                
-                // Determine time unit and bin duration based on total duration
+
+                // Determine time unit and bin duration (same logic as before)
                 let timeUnit = 'days';
                 let binDurationMillis = MSEC_PER_DAY;
-                
-                if (totalDuration <= MSEC_PER_HOUR) {
-                    // Special case for very small duration (≤ 1 hour)
-                    // Create 5 x 1-hour bins centered around the activity
+                 if (totalDuration <= MSEC_PER_HOUR) {
                     timeUnit = 'hours';
                     binDurationMillis = MSEC_PER_HOUR;
-                    // Adjust minDate to 2 hours before the midpoint
                     const midPoint = (minDate.getTime() + maxDate.getTime()) / 2;
                     minDate.setTime(midPoint - 2 * MSEC_PER_HOUR);
-                    // Adjust maxDate to 3 hours after the beginning (which is 5 hours total)
                     maxDate.setTime(minDate.getTime() + 5 * MSEC_PER_HOUR);
                 } else if (totalDuration <= 12 * MSEC_PER_HOUR) {
                     timeUnit = 'hours';
@@ -3006,165 +2989,168 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     timeUnit = 'months';
                     binDurationMillis = Math.max(MSEC_PER_MONTH, totalDuration / 5);
                 }
-                
-                // Log the chosen unit and duration
-                if (timeUnit === 'hours') {
-                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${binDurationMillis / MSEC_PER_HOUR} ${timeUnit}`);
+                // ... (logging logic for unit/duration remains the same) ...
+                 if (timeUnit === 'hours') {
+                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${Math.round(binDurationMillis / MSEC_PER_HOUR * 10)/10} ${timeUnit}`);
                 } else if (timeUnit === 'days') {
-                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${binDurationMillis / MSEC_PER_DAY} ${timeUnit}`);
+                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${Math.round(binDurationMillis / MSEC_PER_DAY * 10)/10} ${timeUnit}`);
                 } else if (timeUnit === 'weeks') {
-                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${binDurationMillis / MSEC_PER_WEEK} ${timeUnit}`);
+                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${Math.round(binDurationMillis / MSEC_PER_WEEK * 10)/10} ${timeUnit}`);
                 } else {
-                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${binDurationMillis / MSEC_PER_MONTH} ${timeUnit}`);
+                    console.log(`DEBUG (DotPlot): Using ${timeUnit} bins, duration approx ${Math.round(binDurationMillis / MSEC_PER_MONTH * 10)/10} ${timeUnit}`);
                 }
-                
-                // Define bin boundaries
+
+
+                // Define bin boundaries and initialize counts for videos and quizzes
                 let binStart = minDate.getTime();
                 const binBoundaries = [];
-                const binCounts = [0, 0, 0, 0, 0];
-                
-                // Create 5 equally-sized bins
+                // Initialize counts per bin for each type
+                const binData = Array(5).fill(null).map(() => ({ video: 0, quiz: 0 }));
+
+                 // Create 5 equally-sized bins
                 for (let i = 0; i < 5; i++) {
                     const currentBinEnd = binStart + binDurationMillis;
                     binBoundaries.push({ start: binStart, end: currentBinEnd });
                     binStart = currentBinEnd;
                 }
-                
-                // Ensure the last bin includes the maxDate
-                if (binBoundaries[4].end < maxDate.getTime()) {
-                    binBoundaries[4].end = maxDate.getTime();
+                 // Ensure the last bin includes the maxDate
+                if (binBoundaries.length > 0 && binBoundaries[binBoundaries.length - 1].end < maxDate.getTime()) {
+                    binBoundaries[binBoundaries.length - 1].end = maxDate.getTime() + 1; // Add 1ms to ensure inclusion
                 }
-                
+
                 console.log('DEBUG (DotPlot): Bin Boundaries:', binBoundaries);
-                
-                // Assign completions to bins
-                completionDates.forEach(date => {
-                    const time = date.getTime();
-                    
-                    // Find which bin this completion falls into
+
+                // Assign completions to bins based on type
+                completionItems.forEach(item => {
+                    const time = item.date.getTime();
                     for (let j = 0; j < 5; j++) {
                         const { start, end } = binBoundaries[j];
-                        
-                        // Special case for the last bin to include the exact end time
-                        if (j === 4 && time >= start && time <= end) {
-                            binCounts[j]++;
-                            break;
-                        }
-                        // Normal case: start is inclusive, end is exclusive
-                        else if (time >= start && time < end) {
-                            binCounts[j]++;
-                            break;
+                        if (time >= start && time < end) { // End is exclusive except for last bin handled implicitly
+                            if (item.type === 'video') {
+                                binData[j].video++;
+                            } else if (item.type === 'quiz') {
+                                binData[j].quiz++;
+                            }
+                            break; // Item assigned to a bin
                         }
                     }
+                     // Check last bin inclusivity specifically
+                     if(time >= binBoundaries[4].start && time <= binBoundaries[4].end) {
+                         // This logic might double count if the loop above didn't break correctly,
+                         // but ensures items exactly at the end are caught IF the loop above misses them.
+                         // A cleaner way is to ensure the loop handles the last bin correctly.
+                         // Let's refine the loop instead.
+                     }
                 });
-                
-                console.log('DEBUG (DotPlot): Bin Counts:', binCounts);
-                
-                // Helper function to format bin labels based on timeUnit
+
+
+                console.log('DEBUG (DotPlot): Bin Data (Video/Quiz):', binData);
+
+                // Helper function to format bin labels (same as before)
                 function formatBinLabel(startDate, endDate, timeUnit) {
                     const start = new Date(startDate);
-                    const end = new Date(endDate);
-                    
+                    // For display, make the end date slightly less than the actual boundary
+                    const displayEnd = new Date(endDate - 1); 
+
                     if (timeUnit === 'hours') {
-                        // Format like "Apr 6, 10am-11am"
                         const startMonth = start.toLocaleString('en-US', { month: 'short' });
                         const startDay = start.getDate();
                         const startHour = start.getHours();
-                        const endHour = end.getHours();
-                        
+                        // Use displayEnd for the end hour
+                        const endHour = displayEnd.getHours(); 
+
                         const formatHour = (hour) => {
                             if (hour === 0) return '12am';
                             if (hour === 12) return '12pm';
                             return hour < 12 ? `${hour}am` : `${hour - 12}pm`;
                         };
                         
-                        return `${startMonth} ${startDay}, ${formatHour(startHour)}-${formatHour(endHour)}`;
+                        // Handle case where end hour wraps around midnight or noon incorrectly
+                        const endHourFormatted = formatHour(endHour);
+                        // If start and end hour are the same after formatting, maybe show just one? Or show next hour?
+                        // Let's show the range for clarity
+                        const startHourFormatted = formatHour(startHour);
+
+                        return `${startMonth} ${startDay}, ${startHourFormatted}-${formatHour(startHour + 1)}`; // Show 1hr block label
                     } else if (timeUnit === 'days') {
-                        // Format like "Apr 6-7"
                         const startMonth = start.toLocaleString('en-US', { month: 'short' });
                         const startDay = start.getDate();
-                        
-                        // Check if end date is in the same month
-                        const endMonth = end.toLocaleString('en-US', { month: 'short' });
-                        const endDay = end.getDate() - 1; // Subtract 1 as the end is exclusive
-                        
-                        if (startMonth === endMonth) {
-                            return startDay === endDay 
-                                ? `${startMonth} ${startDay}` 
-                                : `${startMonth} ${startDay}-${endDay}`;
+                        const endMonth = displayEnd.toLocaleString('en-US', { month: 'short' });
+                        const endDay = displayEnd.getDate();
+
+                        if (startMonth === endMonth && startDay === endDay) {
+                            return `${startMonth} ${startDay}`;
+                        } else if (startMonth === endMonth) {
+                            return `${startMonth} ${startDay}-${endDay}`;
                         } else {
-                            return `${startMonth} ${startDay}-${endMonth} ${endDay}`;
+                            return `${startMonth} ${startDay} - ${endMonth} ${endDay}`;
                         }
                     } else if (timeUnit === 'weeks') {
-                        // Format like "Week of Apr 1"
-                        const startMonth = start.toLocaleString('en-US', { month: 'short' });
+                         const startMonth = start.toLocaleString('en-US', { month: 'short' });
                         const startDay = start.getDate();
                         return `Week of ${startMonth} ${startDay}`;
-                    } else {
-                        // Format like "Apr 2025"
+                    } else { // months
                         const startMonth = start.toLocaleString('en-US', { month: 'short' });
                         const startYear = start.getFullYear();
                         return `${startMonth} ${startYear}`;
                     }
                 }
-                
+
                 // Initialize the HTML for the dot plot
                 let dotPlotHtml = `
                     <h3 class="text-lg font-semibold mb-3 text-indigo-800">Overall Completions Logged Online</h3>
-                    <div class="mt-2 mb-4 text-sm text-gray-500">Each dot represents one completed item</div>
+                    <div class="flex justify-center items-center space-x-4 mt-2 mb-4 text-sm text-gray-500">
+                        <span><span class="inline-block w-3 h-3 bg-blue-600 rounded-full mr-1"></span>Video</span>
+                        <span><span class="inline-block w-3 h-3 bg-green-600 rounded-full mr-1"></span>Quiz</span>
+                    </div>
                     <div class="space-y-2 p-2 bg-gray-50 rounded-lg">
                 `;
-                
-                // Generate the HTML for each bin
+
+                // Generate the HTML for each bin, now with colored dots
                 for (let i = 0; i < 5; i++) {
-                    const count = binCounts[i];
+                    const videoCount = binData[i].video;
+                    const quizCount = binData[i].quiz;
+                    const totalBinCount = videoCount + quizCount;
                     const startDate = binBoundaries[i].start;
                     const endDate = binBoundaries[i].end;
                     const binLabel = formatBinLabel(startDate, endDate, timeUnit);
-                    
-                    // Generate the dots
+
+                    // Generate the dots (blue for video, green for quiz)
                     let dots = '';
-                    for (let j = 0; j < count; j++) {
-                        dots += `<span class="inline-block w-3 h-3 bg-indigo-500 rounded-full mx-1"></span>`;
+                    for (let j = 0; j < videoCount; j++) {
+                        dots += `<span class="inline-block w-3 h-3 bg-blue-600 rounded-full mx-0.5"></span>`; // Use blue-600
                     }
-                    
+                    for (let k = 0; k < quizCount; k++) {
+                        dots += `<span class="inline-block w-3 h-3 bg-green-600 rounded-full mx-0.5"></span>`; // Use green-600
+                    }
+
                     // Add the bin to the HTML
                     dotPlotHtml += `
                         <div class="flex items-center">
-                            <div class="w-32 font-medium text-gray-700 text-sm">${binLabel}</div>
-                            <div class="flex-1">${dots}</div>
-                            <div class="w-8 text-right text-gray-600">${count}</div>
+                            <div class="w-32 font-medium text-gray-700 text-sm truncate pr-2">${binLabel}</div>
+                            <div class="flex-1 flex flex-wrap items-center">${dots || '<span class="text-gray-400 text-xs"></span>'}</div>
+                            <div class="w-8 text-right text-gray-600">${totalBinCount}</div>
                         </div>
                     `;
                 }
-                
+
                 // Close the main div
                 dotPlotHtml += `</div>`;
-                
-                // Calculate and add summary statistics
-                const totalCompletions = completionDates.length;
-                const formattedStartDate = minDate.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                });
-                const formattedEndDate = maxDate.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                });
-                
-                // Calculate number of active days (days with at least one completion)
+
+                // Calculate and add summary statistics (using total length of valid items)
+                const totalCompletions = completionItems.length;
+                 const formattedStartDate = minDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const formattedEndDate = maxDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                // Calculate number of active days
                 const activeDaysSet = new Set();
-                completionDates.forEach(date => {
-                    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+                completionItems.forEach(item => {
+                    const dateStr = item.date.toISOString().split('T')[0];
                     activeDaysSet.add(dateStr);
                 });
                 const activeDays = activeDaysSet.size;
-                
-                // Calculate average completions per active day
-                const averagePerDay = Math.round((totalCompletions / activeDays) * 10) / 10;
-                
+                const averagePerDay = activeDays > 0 ? Math.round((totalCompletions / activeDays) * 10) / 10 : 0;
+
                 // Add summary statistics to the HTML
                 dotPlotHtml += `
                     <div class="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -3178,15 +3164,14 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                         </div>
                         <div class="p-2 bg-gray-50 rounded-lg">
                             <div class="text-xl font-bold text-indigo-600">${averagePerDay}</div>
-                            <div class="text-xs text-gray-500">Avg Per Day</div>
+                            <div class="text-xs text-gray-500">Avg Per Active Day</div>
                         </div>
                     </div>
                     <div class="mt-2 text-xs text-gray-500 text-center">
                         Data from ${formattedStartDate} to ${formattedEndDate}
                     </div>
                 `;
-                
-                // Log the generated HTML length
+
                 console.log('DEBUG (DotPlot): Generated dotPlotHtml. Length:', dotPlotHtml ? dotPlotHtml.length : 'null');
                 
                 // Assign the HTML to the container
@@ -3800,5 +3785,14 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             }
         });
     </script>
+    
+    <!-- QR Code Section -->
+    <div class="my-4 flex flex-col items-center">
+        <div id="qrcode-container" class="p-2 bg-white border border-gray-300 rounded-lg shadow-sm inline-block">
+            <!-- QR code will be rendered here -->
+        </div>
+        <p class="text-xs text-gray-500 mt-1">Scan for page link</p>
+    </div>
+    <!-- End QR Code Section -->
 </body>
 </html> 
