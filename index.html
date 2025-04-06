@@ -2377,41 +2377,6 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             }
         }
         
-        // Helper function to count total videos and quizzes across all units
-        function getTotalItemCounts(unitsData) {
-            if (!unitsData || !Array.isArray(unitsData)) {
-                return { videos: 0, quizzes: 0 };
-            }
-            
-            const counts = {
-                videos: 0,
-                quizzes: 0
-            };
-            
-            // Iterate through all units
-            unitsData.forEach(unit => {
-                // If unit has topics array, count videos and quizzes
-                if (unit.topics && Array.isArray(unit.topics)) {
-                    unit.topics.forEach(topic => {
-                        // Count videos if they exist
-                        if (topic.videos && Array.isArray(topic.videos)) {
-                            counts.videos += topic.videos.length;
-                        }
-                        
-                        // Count quizzes if they exist (excluding PC quizzes which are often repeated at unit level)
-                        if (topic.pdfs && Array.isArray(topic.pdfs)) {
-                            const quizCount = topic.pdfs.filter(pdf => 
-                                pdf.type === 'quiz' && !pdf.filename.includes('pc_')
-                            ).length;
-                            counts.quizzes += quizCount;
-                        }
-                    });
-                }
-            });
-            
-            return counts;
-        }
-        
         // Function to display total remaining item counts
         function displayRemainingItemCounts() {
             const targetEl = document.getElementById('remaining-items');
@@ -2422,13 +2387,13 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 return;
             }
             
-            // Get total counts
-            const { videos, quizzes } = getTotalItemCounts(window.ALL_UNITS_DATA);
+            // Get total counts using the function from allUnitsData.js
+            const { totalVideos, totalQuizzes } = getTotalItemCounts(window.ALL_UNITS_DATA);
             
             // Display the information
             targetEl.innerHTML = `
                 <h3 class="text-lg font-semibold mb-2 text-indigo-800">Course Content Overview</h3>
-                <p>Total Items Across All Units: ${videos} videos, ${quizzes} quizzes.</p>
+                <p>Total Items Across All Units: ${totalVideos} videos, ${totalQuizzes} quizzes.</p>
             `;
         }
         
@@ -2442,8 +2407,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 return;
             }
             
-            // Get total counts
-            const { videos, quizzes } = getTotalItemCounts(window.ALL_UNITS_DATA);
+            // Get total counts using the function from allUnitsData.js
+            const { totalVideos, totalQuizzes } = getTotalItemCounts(window.ALL_UNITS_DATA);
             
             // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
             const today = new Date();
@@ -2463,8 +2428,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
             
             // Calculate required items per day
-            const requiredVideosPerDay = Math.ceil(videos / daysRemaining);
-            const requiredQuizzesPerDay = Math.ceil(quizzes / daysRemaining);
+            const requiredVideosPerDay = Math.ceil(totalVideos / daysRemaining);
+            const requiredQuizzesPerDay = Math.ceil(totalQuizzes / daysRemaining);
             
             // Display the information
             targetEl.innerHTML = `
