@@ -362,6 +362,30 @@
             } catch (error) {
                 // Catch any network errors or errors thrown from the try block
                 console.error('DEBUG: >>> CATCH block: Error during Supabase insert attempt:', error);
+                
+                // Check if the error suggests a network problem
+                if (error.message && error.message.includes('Failed to fetch')) {
+                    console.log('DEBUG: Network error detected, queueing completion locally.');
+                    
+                    // Start a nested try/catch block for queueing logic
+                    try {
+                        // Get the current queue from localStorage
+                        let queue = JSON.parse(localStorage.getItem('offlineCompletionQueue') || '[]');
+                        
+                        // Add a unique timestamp to the completionData object
+                        completionData.queueTimestamp = Date.now();
+                        
+                        // Push the completionData object onto the queue array
+                        queue.push(completionData);
+                        
+                        // Save the updated queue back to localStorage
+                        localStorage.setItem('offlineCompletionQueue', JSON.stringify(queue));
+                        
+                        console.log('DEBUG: Successfully queued completion data for later sync.');
+                    } catch (queueError) {
+                        console.error('Failed to save completion to offline queue:', queueError);
+                    }
+                }
             }
             console.log('DEBUG: >>> Exiting saveCompletionToSupabase.');
         }
