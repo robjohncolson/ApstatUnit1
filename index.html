@@ -1708,57 +1708,34 @@ Thank you for helping me prepare for my AP Statistics exam!`;
         
         // Function to check if daily quota has been met and record it in Supabase
         async function checkDailyQuotaCompletion() {
-            // Check if currentUserId exists
             if (!currentUserId) {
-                console.log('DEBUG: Cannot check daily quota without user ID.');
-                // Remove class if no user is logged in
-                document.body.classList.remove('quota-met-today');
+                console.log('DEBUG (QuotaCheck): Cannot check daily quota without user ID.');
+                // Remove class if no user is logged in (redundant with updateQuotaMetVisualIndicator, but safe)
+                // document.body.classList.remove('quota-met-today');
                 return;
             }
-            
-            // Calculate flexible targets
-            let requiredVideosPerDay = 5; // Default fallback
-            let requiredQuizzesPerDay = 3; // Default fallback
-            
-            try {
-                // Get total counts and calculate days remaining
-                if (typeof ALL_UNITS_DATA !== 'undefined' && Array.isArray(ALL_UNITS_DATA)) {
-                    const { totalVideos, totalQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
-                    
-                    // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
-                    const today = new Date();
-                    const examDate = new Date('May 8, 2025');
-                    
-                    if (today <= examDate) {
-                        const timeDiff = examDate.getTime() - today.getTime();
-                        const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                        
-                        requiredVideosPerDay = Math.ceil(totalVideos / daysRemaining);
-                        requiredQuizzesPerDay = Math.ceil(totalQuizzes / daysRemaining);
-                        
-                        console.log(`DEBUG: Calculated flexible targets: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes per day.`);
-                    }
-                } else {
-                    console.log('DEBUG: ALL_UNITS_DATA not available, using default targets.');
-                }
-            } catch (error) {
-                console.error('Error calculating flexible targets:', error);
-                // Continue with default values
+
+            // --- Get Dynamic Quota Targets ---
+            console.log('DEBUG (QuotaCheck): Calculating dynamic quota targets...');
+            const { requiredVideosPerDay, requiredQuizzesPerDay, error: quotaError } = await calculateDynamicQuota();
+
+            if (quotaError) {
+                console.error(`DEBUG (QuotaCheck): Failed to calculate dynamic quota: ${quotaError}. Aborting check.`);
+                // Update visual indicator to remove 'met' status if calculation fails
+                await updateQuotaMetVisualIndicator();
+                return;
             }
-            
-            console.log(`DEBUG (QuotaCheck): Calculated targets: Videos=${requiredVideosPerDay}, Quizzes=${requiredQuizzesPerDay}`);
-            
+             console.log(`DEBUG (QuotaCheck): Dynamic targets: Videos=${requiredVideosPerDay}, Quizzes=${requiredQuizzesPerDay}`);
+
+
             // Get today's date boundaries using UTC
             const now = new Date();
-            // Get start of CURRENT UTC day
             const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
-            // Get end of CURRENT UTC day
             const endOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
-            // Format date string as YYYY-MM-DD based on UTC date
             const todayDateString = startOfDayUTC.toISOString().split('T')[0];
-            
+
             console.log(`DEBUG: Checking completions for UTC date ${todayDateString} from ${startOfDayUTC.toISOString()} to ${endOfDayUTC.toISOString()}`);
-            
+
             try {
                 // Query Supabase for today's completions
                 const { data, error } = await supabaseClient
@@ -1767,102 +1744,80 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     .eq('user_id', currentUserId)
                     .gte('completed_at', startOfDayUTC.toISOString())
                     .lte('completed_at', endOfDayUTC.toISOString());
-                
+
                 if (error) {
                     console.error('Error fetching today\'s completions:', error);
+                     await updateQuotaMetVisualIndicator(); // Update visual on error
                     return;
                 }
-                
+
                 // Count videos and quizzes completed today
                 const videosToday = data ? data.filter(item => item.item_type === 'video').length : 0;
                 const quizzesToday = data ? data.filter(item => item.item_type === 'quiz').length : 0;
-                
+
                 console.log(`DEBUG (QuotaCheck): Fetched counts for today: Videos=${videosToday}, Quizzes=${quizzesToday}`);
-                
-                console.log(`DEBUG: Today's completions: ${videosToday} videos, ${quizzesToday} quizzes.`);
-                console.log(`DEBUG: Required: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes.`);
-                
-                // Start a new try...catch block for querying and potentially modifying daily_quotas_met
+
+                // --- Check if Quota is Met Now using DYNAMIC targets ---
+                const quotaMetNow = videosToday >= requiredVideosPerDay && quizzesToday >= requiredQuizzesPerDay;
+                console.log(`DEBUG: Quota met now (dynamic)? ${quotaMetNow}`);
+
+
+                // Query Existing Status and Update Logic
                 try {
-                    // Query Existing Status
                     const quotaStatusResult = await supabaseClient
                         .from('daily_quotas_met')
                         .select('id')
                         .eq('user_id', currentUserId)
                         .eq('quota_date', todayDateString)
                         .maybeSingle();
-                    
+
                     if (quotaStatusResult.error) {
                         console.error('Error checking quota status:', quotaStatusResult.error);
-                        return;
+                        await updateQuotaMetVisualIndicator(); // Ensure visual is updated on error
+                        return; // Don't proceed if we can't check current status
                     }
-                    
+
                     const recordExists = quotaStatusResult.data !== null;
-                    console.log(`DEBUG: Record exists for today? ${recordExists}`);
-                    
-                    // Check if Quota is Met Now
-                    const quotaMetNow = videosToday >= requiredVideosPerDay && quizzesToday >= requiredQuizzesPerDay;
-                    console.log(`DEBUG: Quota met now? ${quotaMetNow}`);
-                    
-                    // Implement Logic
+                    console.log(`DEBUG (QuotaCheck - DB): Record exists for today? ${recordExists}`);
+
+                    // Logic for Insert/Delete/No Change
                     if (quotaMetNow && !recordExists) {
-                        console.log("Attempting to INSERT quota record...");
-                        const { data: insertData, error: insertError } = await supabaseClient
+                        console.log("DEBUG (QuotaCheck - DB): Attempting to INSERT quota record...");
+                        const { error: insertError } = await supabaseClient
                             .from('daily_quotas_met')
-                            .insert({
-                                user_id: currentUserId,
-                                quota_date: todayDateString
-                            });
-                        
-                        if (!insertError) {
-                            console.log('Daily flexible quota met and logged successfully.');
-                            // Add the quota-met-today class to the body
-                            document.body.classList.add('quota-met-today');
-                            displayDailyQuotaStatus(); // Re-run the display function after successful logging
-                        } else if (insertError.code === '23505') {
-                            console.log('Quota already logged for today (Unique constraint violation).');
-                            // Ensure class is added even if there was a unique constraint violation
-                            document.body.classList.add('quota-met-today');
-                        } else {
+                            .insert({ user_id: currentUserId, quota_date: todayDateString });
+
+                        if (insertError && insertError.code !== '23505') { // Ignore unique violation, log others
                             console.error('Error logging quota completion:', insertError);
+                        } else if (!insertError) {
+                             console.log('DEBUG (QuotaCheck - DB): Daily flexible quota met and logged successfully.');
+                        } else {
+                             console.log('DEBUG (QuotaCheck - DB): Quota already logged for today (Unique constraint violation).');
                         }
                     } else if (!quotaMetNow && recordExists) {
-                        console.log("Attempting to DELETE quota record...");
-                        const { data: deleteData, error: deleteError } = await supabaseClient
+                        console.log("DEBUG (QuotaCheck - DB): Attempting to DELETE quota record...");
+                        const { error: deleteError } = await supabaseClient
                             .from('daily_quotas_met')
                             .delete()
-                            .eq('user_id', currentUserId)
-                            .eq('quota_date', todayDateString);
-                        
-                        if (!deleteError) {
-                            console.log('Daily quota record deleted successfully.');
-                            // Remove the quota-met-today class from the body
-                            document.body.classList.remove('quota-met-today');
-                            displayDailyQuotaStatus(); // Re-run the display function after successful deletion
-                        } else {
+                            .match({ user_id: currentUserId, quota_date: todayDateString }); // Use match for safety
+
+                        if (deleteError) {
                             console.error('Error deleting quota record:', deleteError);
+                        } else {
+                             console.log('DEBUG (QuotaCheck - DB): Daily quota record deleted successfully.');
                         }
                     } else {
-                        console.log("No change needed for quota status.");
-                        // Update the class based on the current quota status
-                        if (quotaMetNow) {
-                            document.body.classList.add('quota-met-today');
-                        } else {
-                            document.body.classList.remove('quota-met-today');
-                        }
+                         console.log("DEBUG (QuotaCheck - DB): No change needed for DB quota status.");
                     }
-                } catch (quotaError) {
-                    console.error('Error during quota status management:', quotaError);
-                    // Remove class on error
-                    document.body.classList.remove('quota-met-today');
-                }
-            } catch (error) {
-                console.error('Error during quota check process:', error);
-                // Remove class on error
-                document.body.classList.remove('quota-met-today');
-            }
-            await updateQuotaMetVisualIndicator();
 
+                 } catch (quotaManageError) {
+                    console.error('Error during quota status management:', quotaManageError);
+                 }
+            } catch (fetchError) {
+                console.error('Error during quota check process:', fetchError);
+            }
+            // Update visual indicator at the very end, reflecting the final state
+            await updateQuotaMetVisualIndicator();
         }
         
         // Function to mark all videos and quizzes in a topic as completed
@@ -3258,9 +3213,68 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             container.innerHTML = statusHtml;
         }
         
+        // Function to calculate dynamic quota targets based on remaining course content and time
+        async function calculateDynamicQuota() {
+            try {
+                // Get total counts and calculate days remaining
+                if (typeof ALL_UNITS_DATA === 'undefined' || !Array.isArray(ALL_UNITS_DATA)) {
+                    return { 
+                        requiredVideosPerDay: 5, 
+                        requiredQuizzesPerDay: 3,
+                        daysRemaining: 0,
+                        error: "Course data not available" 
+                    };
+                }
+                
+                const { totalVideos, totalQuizzes, completedVideos, completedQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
+                
+                // Calculate remaining items
+                const remainingVideos = Math.max(0, totalVideos - completedVideos);
+                const remainingQuizzes = Math.max(0, totalQuizzes - completedQuizzes);
+                
+                // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
+                const today = new Date();
+                const examDate = new Date('May 8, 2025');
+                
+                if (today > examDate) {
+                    return {
+                        requiredVideosPerDay: remainingVideos,
+                        requiredQuizzesPerDay: remainingQuizzes,
+                        daysRemaining: 0,
+                        error: null
+                    };
+                }
+                
+                const timeDiff = examDate.getTime() - today.getTime();
+                const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                
+                // Calculate minimum required videos/quizzes per day
+                let requiredVideosPerDay = daysRemaining > 0 ? Math.ceil(remainingVideos / daysRemaining) : remainingVideos;
+                let requiredQuizzesPerDay = daysRemaining > 0 ? Math.ceil(remainingQuizzes / daysRemaining) : remainingQuizzes;
+                
+                // Apply minimum daily quota (at least 1 of each if there are any remaining)
+                requiredVideosPerDay = remainingVideos > 0 ? Math.max(1, requiredVideosPerDay) : 0;
+                requiredQuizzesPerDay = remainingQuizzes > 0 ? Math.max(1, requiredQuizzesPerDay) : 0;
+                
+                return {
+                    requiredVideosPerDay,
+                    requiredQuizzesPerDay,
+                    daysRemaining,
+                    error: null
+                };
+            } catch (error) {
+                console.error('Error calculating dynamic quota targets:', error);
+                return {
+                    requiredVideosPerDay: 5, // Default fallback
+                    requiredQuizzesPerDay: 3, // Default fallback
+                    daysRemaining: 0,
+                    error: error.message || "Unknown error calculating quota"
+                };
+            }
+        }
+        
         // Function to display daily quota status from Supabase
-                // Function to display daily quota status from Supabase
-                async function displayDailyQuotaStatus() {
+        async function displayDailyQuotaStatus() {
             const container = document.getElementById('todays-quota-status');
             console.log(`DEBUG (QuotaDisplay - Entry): Function called. currentUserId is: ${currentUserId} (Type: ${typeof currentUserId})`);
 
@@ -3270,6 +3284,8 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                         <p class="text-gray-700">Enter username to see quota status.</p>
                     </div>
                 `;
+                // Ensure class is removed if no user
+                // document.body.classList.remove('quota-met-today'); // Handled by updateQuotaMetVisualIndicator
                 return;
             }
 
@@ -3287,12 +3303,13 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                             <p class="text-red-700">Could not calculate dynamic goal. Please try again later.</p>
                         </div>
                     `;
+                    // await updateQuotaMetVisualIndicator(); // Update visual on error
                     return;
                  }
                  console.log(`DEBUG (QuotaDisplay): Dynamic targets: Videos=${requiredVideosPerDay}, Quizzes=${requiredQuizzesPerDay}`);
 
 
-                // Fetch Today's Completions (Existing code - Keep this part)
+                // Fetch Today's Completions
                 const now = new Date();
                 const startOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
                 const endOfDayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 23, 59, 59, 999));
@@ -3310,51 +3327,56 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                         .lte('completed_at', endOfDayUTC.toISOString());
 
                     if (error) {
-                        throw new Error(`Error fetching today's completions: ${error.message}`);
+                        // Don't throw, just log and proceed with 0 counts
+                        console.error(`DEBUG (QuotaDisplay): Error fetching today's completions: ${error.message}`);
+                    } else {
+                        videosToday = data ? data.filter(i => i.item_type === 'video').length : 0;
+                        quizzesToday = data ? data.filter(i => i.item_type === 'quiz').length : 0;
                     }
-
-                    videosToday = data ? data.filter(i => i.item_type === 'video').length : 0;
-                    quizzesToday = data ? data.filter(i => i.item_type === 'quiz').length : 0;
                     console.log(`DEBUG (QuotaDisplay): Today's completions: ${videosToday} videos, ${quizzesToday} quizzes.`);
 
-                } catch (fetchError) { // Renamed error variable
-                    console.error('Error fetching today\'s completions:', fetchError);
-                    // Continue with zero counts but maybe show an error indicator?
+                } catch (fetchError) { // Catch potential exceptions
+                    console.error('DEBUG (QuotaDisplay): Exception fetching today\'s completions:', fetchError);
+                    // Continue with zero counts
                  }
 
-                // Fetch Quota Met Status (Existing code - Keep this part)
+                // Fetch Quota Met Status (from DB)
                 let isQuotaMetToday = false;
                 try {
-                    const quotaStatusResult = await supabaseClient
+                    const { data: quotaStatusData, error: quotaStatusError } = await supabaseClient
                         .from('daily_quotas_met')
                         .select('id')
                         .eq('user_id', currentUserId)
                         .eq('quota_date', todayDateString)
                         .maybeSingle();
 
-                    if (quotaStatusResult.error) {
-                        throw new Error(`Error fetching quota status: ${quotaStatusResult.error.message}`);
+                    if (quotaStatusError) {
+                       console.error(`DEBUG (QuotaDisplay): Error fetching quota status from DB: ${quotaStatusError.message}`);
+                       // Don't throw, just assume not met if error occurs
+                    } else {
+                       isQuotaMetToday = (quotaStatusData !== null);
                     }
-                    isQuotaMetToday = (quotaStatusResult.data !== null);
+                     console.log(`DEBUG (QuotaDisplay): Quota met status from DB: ${isQuotaMetToday}`);
 
-                 } catch (statusError) { // Renamed error variable
-                    console.error('Error fetching quota met status:', statusError);
-                    // Continue with false, maybe show an error indicator?
+                 } catch (statusError) {
+                    console.error('DEBUG (QuotaDisplay): Exception fetching quota met status:', statusError);
+                    // Assume not met on exception
                  }
 
                 // --- Build HTML Output using DYNAMIC targets ---
                 let statusHtml = `<h3 class="text-lg font-semibold mb-3 text-indigo-800">Today's Dynamic Goal Progress</h3>`;
 
-                // Video Progress Bar (using dynamic target)
+                // Video Progress Bar
                 const videoPercent = requiredVideosPerDay > 0
                     ? Math.min(100, (videosToday / requiredVideosPerDay) * 100)
-                    : (videosToday > 0 ? 100 : 0); // If target is 0, 100% if any done, else 0
+                    : (completedVideos > 0 && totalVideos > 0 ? 100 : 0); // Handle 0 target: 100% if any done & course not empty, else 0
+
 
                 statusHtml += `
                     <div class="mb-4">
                         <div class="flex justify-between mb-1">
                             <span class="text-sm font-medium text-gray-700">Videos</span>
-                            <span class="text-sm font-medium text-gray-700">${videosToday}/${requiredVideosPerDay} videos</span>
+                            <span class="text-sm font-medium text-gray-700">${videosToday}/${requiredVideosPerDay}</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2.5">
                             <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${videoPercent}%"></div>
@@ -3362,16 +3384,17 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     </div>
                 `;
 
-                // Quiz Progress Bar (using dynamic target)
+                // Quiz Progress Bar
                 const quizPercent = requiredQuizzesPerDay > 0
                     ? Math.min(100, (quizzesToday / requiredQuizzesPerDay) * 100)
-                    : (quizzesToday > 0 ? 100 : 0); // If target is 0, 100% if any done, else 0
+                    : (completedQuizzes > 0 && totalQuizzes > 0 ? 100 : 0); // Handle 0 target: 100% if any done & course not empty, else 0
+
 
                 statusHtml += `
                     <div class="mb-4">
                         <div class="flex justify-between mb-1">
                             <span class="text-sm font-medium text-gray-700">Quizzes</span>
-                            <span class="text-sm font-medium text-gray-700">${quizzesToday}/${requiredQuizzesPerDay} quizzes</span>
+                            <span class="text-sm font-medium text-gray-700">${quizzesToday}/${requiredQuizzesPerDay}</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2.5">
                             <div class="bg-green-600 h-2.5 rounded-full" style="width: ${quizPercent}%"></div>
@@ -3379,11 +3402,13 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                     </div>
                 `;
 
-                // Overall Status (Existing code - Keep this part, but update the explanation text)
+                // Overall Status Message (using DB status)
                 if (isQuotaMetToday) {
                     statusHtml += `
                         <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg mb-3">
-                            <svg class="w-6 h-6 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">...</svg>
+                            <svg class="w-6 h-6 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
                             <p class="font-medium text-green-700">Met! Well done!</p>
                         </div>
                         <p class="mt-2 text-sm text-gray-500">
@@ -3393,7 +3418,9 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 } else {
                      statusHtml += `
                         <div class="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-3">
-                            <svg class="w-6 h-6 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">...</svg>
+                            <svg class="w-6 h-6 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                            </svg>
                             <p class="font-medium text-yellow-700">Not yet met. Keep going!</p>
                         </div>
                         <p class="mt-2 text-sm text-gray-500">
@@ -3406,6 +3433,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
 
             } catch (error) {
                 console.error('Error in displayDailyQuotaStatus:', error);
+                 // await updateQuotaMetVisualIndicator(); // Update visual on error
                 container.innerHTML = `
                     <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
                         <p class="text-red-700">Could not fetch quota status. Please try again later.</p>
