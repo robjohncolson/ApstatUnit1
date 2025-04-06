@@ -374,7 +374,7 @@
                     // If error is null, the operation was likely successful on Supabase's side
                     console.log(`DEBUG: >>> Completion save to Supabase seems successful: ${itemType} - ${itemIdentifier}`);
                     // Call the next step ONLY on success
-                    checkLocalQuota(); // Moved inside the 'else' block
+                    checkDailyQuotaCompletion(); // Moved inside the 'else' block
                 }
 
             } catch (error) {
@@ -1355,7 +1355,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             }
             
             // Call placeholder function for checking local storage quota
-            checkLocalQuota();
+            checkDailyQuotaCompletion();
         }
         
         // Function to mark a specific quiz as completed or not completed
@@ -1388,13 +1388,107 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             }
             
             // Call placeholder function for checking local storage quota
-            checkLocalQuota();
+            checkDailyQuotaCompletion();
         }
         
-        // Placeholder function for checking local storage quota
-        function checkLocalQuota() {
-            // This function will be implemented later
-            console.log('Local storage quota check placeholder');
+        
+        // Function to check if daily quota has been met and record it in Supabase
+        async function checkDailyQuotaCompletion() {
+            // Check if currentUserId exists
+            if (!currentUserId) {
+                console.log('DEBUG: Cannot check daily quota without user ID.');
+                return;
+            }
+            
+            // Calculate flexible targets
+            let requiredVideosPerDay = 5; // Default fallback
+            let requiredQuizzesPerDay = 3; // Default fallback
+            
+            try {
+                // Get total counts and calculate days remaining
+                if (typeof ALL_UNITS_DATA !== 'undefined' && Array.isArray(ALL_UNITS_DATA)) {
+                    const { totalVideos, totalQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
+                    
+                    // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
+                    const today = new Date();
+                    const examDate = new Date('May 8, 2025');
+                    
+                    if (today <= examDate) {
+                        const timeDiff = examDate.getTime() - today.getTime();
+                        const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                        
+                        requiredVideosPerDay = Math.ceil(totalVideos / daysRemaining);
+                        requiredQuizzesPerDay = Math.ceil(totalQuizzes / daysRemaining);
+                        
+                        console.log(`DEBUG: Calculated flexible targets: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes per day.`);
+                    }
+                } else {
+                    console.log('DEBUG: ALL_UNITS_DATA not available, using default targets.');
+                }
+            } catch (error) {
+                console.error('Error calculating flexible targets:', error);
+                // Continue with default values
+            }
+            
+            // Get today's date boundaries
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
+            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
+            const todayDateString = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+            
+            console.log(`DEBUG: Checking completions for ${todayDateString} from ${startOfDay} to ${endOfDay}`);
+            
+            try {
+                // Query Supabase for today's completions
+                const { data, error } = await supabaseClient
+                    .from('completions')
+                    .select('item_type')
+                    .eq('user_id', currentUserId)
+                    .gte('completed_at', startOfDay)
+                    .lte('completed_at', endOfDay);
+                
+                if (error) {
+                    console.error('Error fetching today\'s completions:', error);
+                    return;
+                }
+                
+                // Count videos and quizzes completed today
+                const videosToday = data ? data.filter(item => item.item_type === 'video').length : 0;
+                const quizzesToday = data ? data.filter(item => item.item_type === 'quiz').length : 0;
+                
+                console.log(`DEBUG: Today's completions: ${videosToday} videos, ${quizzesToday} quizzes.`);
+                console.log(`DEBUG: Required: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes.`);
+                
+                // Check if quota is met
+                if (videosToday >= requiredVideosPerDay && quizzesToday >= requiredQuizzesPerDay) {
+                    console.log('DEBUG: Daily flexible quota requirements met!');
+                    
+                    // Record in Supabase daily_quotas_met table
+                    const { error: insertError } = await supabaseClient
+                        .from('daily_quotas_met')
+                        .insert({
+                            user_id: currentUserId,
+                            quota_date: todayDateString
+                        });
+                    
+                    if (!insertError) {
+                        console.log('DEBUG: Daily flexible quota met and logged.');
+                        
+                        // Optional: Add a subtle notification here
+                        // For example, briefly show a success message or update an icon
+                        
+                    } else if (insertError.code === '23505') {
+                        // This is a unique violation error (quota already logged for today)
+                        console.log('DEBUG: Quota already logged for today.');
+                    } else {
+                        console.error('Error logging quota completion:', insertError);
+                    }
+                } else {
+                    console.log('DEBUG: Daily quota not yet met.');
+                }
+            } catch (error) {
+                console.error('Error during quota check process:', error);
+            }
         }
         
         // Function to mark all videos and quizzes in a topic as completed
@@ -1434,7 +1528,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             updateProgressBar();
             
             // Call placeholder function for checking local storage quota
-            checkLocalQuota();
+            checkDailyQuotaCompletion();
             
             // If a topic was completed, scroll to the next one in the study materials tab
             if (currentIndex < pdfFiles.length - 1 && document.getElementById('content-study-materials').classList.contains('active')) {
