@@ -1900,7 +1900,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             // Attempt to sync offline queue if user is identified
             if (currentUserId) {
                 await syncOfflineQueue();
-                await syncLocalStorageToSupabase();
+                // await syncLocalStorageToSupabase(); // Disabled to prevent potential duplicate entries from race conditions
             }
             
             // Set Grok prompt content
@@ -3117,57 +3117,132 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 return;
             }
             
-            // Get today's date in YYYY-MM-DD format
-            const today = new Date();
-            const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-            
-            // Calculate flexible targets
-            let requiredVideosPerDay = 5; // Default fallback
-            let requiredQuizzesPerDay = 3; // Default fallback
+            // Clear the container's previous content
+            container.innerHTML = '';
             
             try {
-                // Get total counts and calculate days remaining
-                if (typeof ALL_UNITS_DATA !== 'undefined' && Array.isArray(ALL_UNITS_DATA)) {
-                    const { totalVideos, totalQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
-                    
-                    // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
-                    const examDate = new Date('May 8, 2025');
-                    
-                    if (today <= examDate) {
-                        const timeDiff = examDate.getTime() - today.getTime();
-                        const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                // Calculate Flexible Targets
+                let requiredVideosPerDay = 5; // Default fallback
+                let requiredQuizzesPerDay = 3; // Default fallback
+                
+                try {
+                    // Get total counts and calculate days remaining
+                    if (typeof ALL_UNITS_DATA !== 'undefined' && Array.isArray(ALL_UNITS_DATA)) {
+                        const { totalVideos, totalQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
                         
-                        requiredVideosPerDay = Math.ceil(totalVideos / daysRemaining);
-                        requiredQuizzesPerDay = Math.ceil(totalQuizzes / daysRemaining);
+                        // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
+                        const today = new Date();
+                        const examDate = new Date('May 8, 2025');
+                        
+                        if (today <= examDate) {
+                            const timeDiff = examDate.getTime() - today.getTime();
+                            const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
+                            
+                            requiredVideosPerDay = Math.ceil(totalVideos / daysRemaining);
+                            requiredQuizzesPerDay = Math.ceil(totalQuizzes / daysRemaining);
+                        }
+                        
+                        console.log(`Calculated flexible targets: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes per day`);
                     }
-                }
-            } catch (error) {
-                console.error('Error calculating flexible targets:', error);
-                // Continue with default values
-            }
-            
-            // Create the heading with flexible targets
-            let statusHtml = `
-                <h3 class="text-lg font-semibold mb-2 text-indigo-800">Today's Flexible Goal (~${requiredVideosPerDay} videos / ~${requiredQuizzesPerDay} quizzes)</h3>
-            `;
-            
-            try {
-                // Query Supabase for today's quota status
-                const { data, error } = await supabaseClient
-                    .from('daily_quotas_met')
-                    .select('id')
-                    .eq('user_id', currentUserId)
-                    .eq('quota_date', dateStr)
-                    .maybeSingle();
-                
-                if (error) {
-                    throw new Error(`Error fetching quota status: ${error.message}`);
+                } catch (error) {
+                    console.error('Error calculating flexible targets:', error);
+                    // Continue with default values
                 }
                 
-                if (data) {
+                // Fetch Today's Completions
+                const today = new Date();
+                const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+                const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
+                
+                let videosToday = 0;
+                let quizzesToday = 0;
+                
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('completions')
+                        .select('item_type')
+                        .eq('user_id', currentUserId)
+                        .gte('completed_at', startOfDay)
+                        .lte('completed_at', endOfDay);
+                    
+                    if (error) {
+                        throw new Error(`Error fetching today's completions: ${error.message}`);
+                    }
+                    
+                    videosToday = data ? data.filter(i => i.item_type === 'video').length : 0;
+                    quizzesToday = data ? data.filter(i => i.item_type === 'quiz').length : 0;
+                    console.log(`Today's completions: ${videosToday} videos, ${quizzesToday} quizzes`);
+                    
+                } catch (error) {
+                    console.error('Error fetching today\'s completions:', error);
+                    // Continue with zero counts
+                }
+                
+                // Fetch Quota Met Status
+                const dateStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+                let isQuotaMetToday = false;
+                
+                try {
+                    const quotaStatusResult = await supabaseClient
+                        .from('daily_quotas_met')
+                        .select('id')
+                        .eq('user_id', currentUserId)
+                        .eq('quota_date', dateStr)
+                        .maybeSingle();
+                    
+                    if (quotaStatusResult.error) {
+                        throw new Error(`Error fetching quota status: ${quotaStatusResult.error.message}`);
+                    }
+                    
+                    isQuotaMetToday = (quotaStatusResult.data !== null);
+                    
+                } catch (error) {
+                    console.error('Error fetching quota met status:', error);
+                    // Continue with false
+                }
+                
+                // Build HTML Output
+                let statusHtml = `<h3 class="text-lg font-semibold mb-3 text-indigo-800">Today's Flexible Goal Progress</h3>`;
+                
+                // Video Progress
+                const videoPercent = requiredVideosPerDay > 0 
+                    ? Math.min(100, (videosToday / requiredVideosPerDay) * 100) 
+                    : 100;
+                
+                statusHtml += `
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">Videos</span>
+                            <span class="text-sm font-medium text-gray-700">${videosToday}/${requiredVideosPerDay} videos</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-blue-600 h-2.5 rounded-full" style="width: ${videoPercent}%"></div>
+                        </div>
+                    </div>
+                `;
+                
+                // Quiz Progress
+                const quizPercent = requiredQuizzesPerDay > 0 
+                    ? Math.min(100, (quizzesToday / requiredQuizzesPerDay) * 100) 
+                    : 100;
+                
+                statusHtml += `
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">Quizzes</span>
+                            <span class="text-sm font-medium text-gray-700">${quizzesToday}/${requiredQuizzesPerDay} quizzes</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-green-600 h-2.5 rounded-full" style="width: ${quizPercent}%"></div>
+                        </div>
+                    </div>
+                `;
+                
+                // Overall Status
+                if (isQuotaMetToday) {
                     // Quota has been met
                     statusHtml += `
-                        <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg mb-3">
                             <svg class="w-6 h-6 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                             </svg>
@@ -3180,7 +3255,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 } else {
                     // Quota has not been met yet
                     statusHtml += `
-                        <div class="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <div class="flex items-center p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-3">
                             <svg class="w-6 h-6 text-yellow-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clip-rule="evenodd"></path>
                             </svg>
@@ -3191,16 +3266,18 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                         </p>
                     `;
                 }
+                
+                // Set the container's innerHTML
+                container.innerHTML = statusHtml;
+                
             } catch (error) {
-                console.error(error);
-                statusHtml += `
+                console.error('Error in displayDailyQuotaStatus:', error);
+                container.innerHTML = `
                     <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
                         <p class="text-red-700">Could not fetch quota status. Please try again later.</p>
                     </div>
                 `;
             }
-            
-            container.innerHTML = statusHtml;
         }
         
         // Function to fetch and display peer quota achievements
@@ -3349,105 +3426,6 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             } finally {
                 // Hide loading message
                 loadingEl.style.display = 'none';
-            }
-        }
-        
-        // Function to check if daily quota has been met and record it in Supabase
-        async function checkDailyQuotaCompletion() {
-            // Check if currentUserId exists
-            if (!currentUserId) {
-                console.log('DEBUG: Cannot check daily quota without user ID.');
-                return;
-            }
-            
-            // Calculate flexible targets
-            let requiredVideosPerDay = 5; // Default fallback
-            let requiredQuizzesPerDay = 3; // Default fallback
-            
-            try {
-                // Get total counts and calculate days remaining
-                if (typeof ALL_UNITS_DATA !== 'undefined' && Array.isArray(ALL_UNITS_DATA)) {
-                    const { totalVideos, totalQuizzes } = getTotalItemCounts(ALL_UNITS_DATA);
-                    
-                    // Calculate days remaining until May 8th, 2025 (AP Statistics Exam date)
-                    const today = new Date();
-                    const examDate = new Date('May 8, 2025');
-                    
-                    if (today <= examDate) {
-                        const timeDiff = examDate.getTime() - today.getTime();
-                        const daysRemaining = Math.ceil(timeDiff / (1000 * 3600 * 24));
-                        
-                        requiredVideosPerDay = Math.ceil(totalVideos / daysRemaining);
-                        requiredQuizzesPerDay = Math.ceil(totalQuizzes / daysRemaining);
-                        
-                        console.log(`DEBUG: Calculated flexible targets: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes per day.`);
-                    }
-                } else {
-                    console.log('DEBUG: ALL_UNITS_DATA not available, using default targets.');
-                }
-            } catch (error) {
-                console.error('Error calculating flexible targets:', error);
-                // Continue with default values
-            }
-            
-            // Get today's date boundaries
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0).toISOString();
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
-            const todayDateString = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-            
-            console.log(`DEBUG: Checking completions for ${todayDateString} from ${startOfDay} to ${endOfDay}`);
-            
-            try {
-                // Query Supabase for today's completions
-                const { data, error } = await supabaseClient
-                    .from('completions')
-                    .select('item_type')
-                    .eq('user_id', currentUserId)
-                    .gte('completed_at', startOfDay)
-                    .lte('completed_at', endOfDay);
-                
-                if (error) {
-                    console.error('Error fetching today\'s completions:', error);
-                    return;
-                }
-                
-                // Count videos and quizzes completed today
-                const videosToday = data ? data.filter(item => item.item_type === 'video').length : 0;
-                const quizzesToday = data ? data.filter(item => item.item_type === 'quiz').length : 0;
-                
-                console.log(`DEBUG: Today's completions: ${videosToday} videos, ${quizzesToday} quizzes.`);
-                console.log(`DEBUG: Required: ${requiredVideosPerDay} videos, ${requiredQuizzesPerDay} quizzes.`);
-                
-                // Check if quota is met
-                if (videosToday >= requiredVideosPerDay && quizzesToday >= requiredQuizzesPerDay) {
-                    console.log('DEBUG: Daily flexible quota requirements met!');
-                    
-                    // Record in Supabase daily_quotas_met table
-                    const { error: insertError } = await supabaseClient
-                        .from('daily_quotas_met')
-                        .insert({
-                            user_id: currentUserId,
-                            quota_date: todayDateString
-                        });
-                    
-                    if (!insertError) {
-                        console.log('DEBUG: Daily flexible quota met and logged.');
-                        
-                        // Optional: Add a subtle notification here
-                        // For example, briefly show a success message or update an icon
-                        
-                    } else if (insertError.code === '23505') {
-                        // This is a unique violation error (quota already logged for today)
-                        console.log('DEBUG: Quota already logged for today.');
-                    } else {
-                        console.error('Error logging quota completion:', insertError);
-                    }
-                } else {
-                    console.log('DEBUG: Daily quota not yet met.');
-                }
-            } catch (error) {
-                console.error('Error during quota check process:', error);
             }
         }
     </script>
