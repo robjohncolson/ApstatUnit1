@@ -1572,6 +1572,11 @@ Thank you for helping me prepare for my AP Statistics exam!`;
             // Call identifyUser first
             await identifyUser();
             
+            // Attempt to sync offline queue if user is identified
+            if (currentUserId) {
+                await syncOfflineQueue();
+            }
+            
             // Set Grok prompt content
             document.getElementById('grok-prompt').textContent = grokPrompt;
             
