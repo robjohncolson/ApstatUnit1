@@ -3135,7 +3135,7 @@ Thank you for helping me prepare for my AP Statistics exam!`;
                 topic.quizzes.forEach((quiz, index) => {
                     if (quiz.questionPdf) {
                         const linkText = topic.isCapstone && topic.quizzes.length > 1
-                            ? (index === 0 ? "FRQ Questions PDF" : index === 1 ? "MCQ Part A PDF" : "MCQ Part B PDF")
+                            ? (quiz.quizId === "1-capstone_q1" ? "FRQ Questions PDF" : quiz.quizId === "1-capstone_q2" ? "MCQ Part A PDF" : "MCQ Part B PDF")
                             : (topic.isCapstone ? "FRQ Questions PDF" : "Questions PDF");
                         
                         linksHTML += `
