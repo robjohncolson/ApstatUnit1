@@ -21,8 +21,8 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [],
         current: false
-      },
-      {
+    },
+    {
         id: "1-2",
         name: "Topic 1.2",
         description: "The Language of Variation: Variables",
@@ -36,16 +36,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.2_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.2_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.2_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.2_answers.pdf",
                 quizId: "1-2_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-3",
         name: "Topic 1.3",
         description: "Representing a Categorical Variable with Tables",
@@ -59,16 +59,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.3_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.3_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.3_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.3_answers.pdf",
                 quizId: "1-3_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-4",
         name: "Topic 1.4",
         description: "Representing a Categorical Variable with Graphs",
@@ -88,16 +88,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.4_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.4_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.4_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.4_answers.pdf",
                 quizId: "1-4_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-5",
         name: "Topic 1.5",
         description: "Representing a Quantitative Variable with Graphs",
@@ -111,16 +111,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.5_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.5_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.5_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.5_answers.pdf",
                 quizId: "1-5_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-6",
         name: "Topic 1.6",
         description: "Describing the Distribution of a Quantitative Variable",
@@ -134,16 +134,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.6_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.6_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.6_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.6_answers.pdf",
                 quizId: "1-6_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-7",
         name: "Topic 1.7",
         description: "Summary Statistics for a Quantitative Variable",
@@ -163,16 +163,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.7_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.7_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.7_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.7_answers.pdf",
                 quizId: "1-7_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-8",
         name: "Topic 1.8",
         description: "Graphical Representations of Summary Statistics",
@@ -186,16 +186,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.8_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.8_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.8_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.8_answers.pdf",
                 quizId: "1-8_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-9",
         name: "Topic 1.9",
         description: "Comparing Distributions of a Quantitative Variable",
@@ -209,16 +209,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.9_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.9_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.9_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.9_answers.pdf",
                 quizId: "1-9_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-10",
         name: "Topic 1.10",
         description: "The Normal Distribution",
@@ -244,16 +244,16 @@ const ALL_UNITS_DATA = [
         ],
         quizzes: [
             {
-                questionPdf: "pdfs/unit1/1.10_quiz.pdf",
-                answersPdf: "pdfs/unit1/1.10_answers.pdf",
+                questionPdf: "pdfs/unit1/unit1_section1.10_quiz.pdf",
+                answersPdf: "pdfs/unit1/unit1_section1.10_answers.pdf",
                 quizId: "1-10_q1",
                 completed: false,
                 completionDate: null
             }
         ],
         current: false
-      },
-      {
+    },
+    {
         id: "1-capstone",
         name: "Unit 1 Progress Check",
         description: "Capstone Assessment",

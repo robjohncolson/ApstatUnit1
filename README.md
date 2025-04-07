@@ -8,7 +8,10 @@ A set of Python tools to standardize PDF filename nomenclature across different 
 Analyzes and renames PDF files to follow a consistent naming pattern.
 
 ### 2. replace_pdf_files_array.py
-Updates the `pdfFiles` array in your HTML with standardized file paths.
+Updates the `pdfFiles` array in your index.html with standardized file paths.
+
+### 3. update_all_units_data.py
+Updates the PDF paths in js/allUnitsData.js for multi-unit applications.
 
 ## Usage Process
 
@@ -18,11 +21,19 @@ Updates the `pdfFiles` array in your HTML with standardized file paths.
    ```
    This will interactively guide you through standardizing your PDF filenames.
 
-2. After renaming your files, update the references in your HTML:
+2. After renaming your files, update the references in your code:
+
+   For single-unit pages:
    ```
    python replace_pdf_files_array.py
    ```
    This will replace the `pdfFiles` array in index.html with the standardized paths.
+   
+   For multi-unit applications:
+   ```
+   python update_all_units_data.py
+   ```
+   This will update the PDF paths in js/allUnitsData.js.
 
 ## Standardized Format
 
