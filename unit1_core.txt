@@ -1,11 +1,8 @@
-// Standardized PDF file paths using the new naming convention
-// Original: pdfs/unit1/1.2_quiz.pdf -> New: pdfs/unit1/unit1_section1.2_quiz.pdf
-
-// To use these standardized paths:
-// 1. Rename your PDF files using the standardize_filenames.py script
-// 2. Replace the PDF paths in your index.html file with these standardized paths
-
-const pdfFiles = [
+AP Statistics Unit 1: Exploring One-Variable Data = %%UNIT_TITLE%%
+AP Statistics Unit 1: Exploring One-Variable Data = %%UNIT_H1%%
+Unit 1 represents 15-23% of the AP Statistics Exam = %%UNIT_EXAMWEIGHT%%
+1 = %%UNIT_ID%%
+[
     {
         id: "1-1",
         name: "Topic 1.1",
@@ -283,4 +280,4 @@ const pdfFiles = [
         isCapstone: true,
         current: false
     },
-]; 
+] = %%PDF_FILES_ARRAY%%
